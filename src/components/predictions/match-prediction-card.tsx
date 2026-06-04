@@ -15,6 +15,7 @@ import { MATCH_TIMEZONE_ABBR } from "@/lib/match-timezone";
 import type { FixtureRow, ScoringRuleRow } from "@/lib/predictions-types";
 import {
   formatFixtureDateTime,
+  getFixturePredictionLock,
   isKnockoutFixture,
   type PredictionDraft,
 } from "@/lib/predictions-utils";
@@ -47,8 +48,9 @@ export function MatchPredictionCard({
 }: MatchPredictionCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const isLocked = !fixture.predictions_open;
-  const canEdit = isAuthenticated && !isLocked;
+  const lock = getFixturePredictionLock(fixture);
+  const isLocked = lock !== "open";
+  const canEdit = isAuthenticated && lock === "open";
   const { dateShort, timeShort } = formatFixtureDateTime(
     fixture.match_date,
     fixture.match_time,
@@ -125,7 +127,7 @@ export function MatchPredictionCard({
           {fixture.stadium ? ` · ${fixture.stadium}` : ""}
         </p>
         <MatchStatusBadges
-          isLocked={isLocked}
+          lock={lock}
           isSaved={isSaved}
           canEdit={canEdit}
           sideBetsFilled={sideBetsFilled}
@@ -154,7 +156,7 @@ export function MatchPredictionCard({
         aria-expanded={isExpanded}
       >
         <MaterialIcon
-          name={isExpanded ? "expand_less" : "expand_more"}
+          name={isExpanded ? "remove_circle" : "add_circle"}
           className="text-xl"
         />
         {isExpanded ? "Ocultar apuestas adicionales" : "Apuestas adicionales"}

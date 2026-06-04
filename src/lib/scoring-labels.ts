@@ -4,8 +4,8 @@ const RULE_LABELS: Record<string, string> = {
   winner: "Ganador del partido",
   extra_time: "¿Habrá prórroga?",
   first_goal_minute: "Intervalo del primer gol",
-  top_scorer_player: "Goleador del torneo (jugador)",
-  top_scorer_goals: "Goleador del torneo (goles)",
+  top_scorer_player: "Goleador del torneo",
+  top_scorer_goals: "Goles del máximo goleador del torneo",
 };
 
 const RULE_HELPERS: Record<string, string> = {

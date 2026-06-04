@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 type SiteHeaderProps = {
   userEmail?: string | null;
   isAdmin?: boolean;
-  activeNav?: "home" | "matches" | "clasificacion" | "profile";
+  activeNav?: "home" | "matches" | "grupos" | "clasificacion" | "profile";
 };
 
 const navLinkClass =
@@ -22,7 +22,7 @@ export function SiteHeader({
         <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
           <MaterialIcon name="sports_soccer" className="text-3xl text-primary" />
           <h1 className="font-headline text-lg font-bold text-primary md:text-xl">
-            Polla Mundial 2026
+            Mundial 2026
           </h1>
         </Link>
 
@@ -49,7 +49,23 @@ export function SiteHeader({
             )}
           >
             <MaterialIcon name="event_note" filled={activeNav === "matches"} className="text-xl" />
-            Partidos
+            Apuestas
+          </Link>
+          <Link
+            href="/grupos"
+            className={cn(
+              navLinkClass,
+              activeNav === "grupos"
+                ? "bg-surface-container-high font-bold text-primary"
+                : "text-on-surface-variant hover:bg-surface-container-high",
+            )}
+          >
+            <MaterialIcon
+              name="grid_view"
+              filled={activeNav === "grupos"}
+              className="text-xl"
+            />
+            Grupos
           </Link>
           <Link
             href="/clasificacion"
@@ -93,7 +109,7 @@ export function SiteHeader({
                   )}
                 >
                   <MaterialIcon name="admin_panel_settings" className="text-xl" />
-                  Administración
+                  Admin
                 </Link>
               ) : null}
               <span className="max-w-40 truncate text-sm text-on-surface-variant">

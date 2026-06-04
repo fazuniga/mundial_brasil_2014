@@ -104,7 +104,7 @@ export default async function ProfilePage() {
               className="font-geist text-white flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary-container"
             >
               <MaterialIcon name="event_note" className="text-[18px]" />
-              Ir a partidos
+              Ir a Apuestas
             </Link>
           </div>
 
@@ -185,7 +185,7 @@ export default async function ProfilePage() {
                 </p>
               ) : (
                 <p className="font-geist text-sm text-on-surface-variant">
-                  Aún no has guardado pronósticos. Ve a Partidos para registrar tu prode.
+                  Aún no has guardado pronósticos. Ve a Apuestas para registrar tu prode.
                 </p>
               )}
               <Link

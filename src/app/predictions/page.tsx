@@ -34,7 +34,7 @@ export default async function PredictionsPage() {
     supabase
       .from("v_fixture")
       .select(
-        "id_match, id_round, name_round, group_code, dow, match_date, match_time, home_code, home_country, away_code, away_country, city, stadium, predictions_open",
+        "id_match, id_round, name_round, group_code, dow, match_date, match_time, home_code, home_country, away_code, away_country, city, stadium, round_predictions_enabled, predictions_open",
       )
       .order("match_date")
       .order("match_time"),
@@ -131,7 +131,7 @@ export default async function PredictionsPage() {
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-section-gap px-gutter-md pb-24 pt-[calc(4rem+2rem)] md:pb-8">
         <header className="space-y-2">
           <p className="font-geist text-xs font-semibold uppercase tracking-widest text-accent">
-            Partidos
+            Apuestas
           </p>
           <h1 className="font-headline text-2xl font-bold text-primary md:text-3xl">
             Pronosticar marcador

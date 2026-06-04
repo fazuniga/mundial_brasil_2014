@@ -44,7 +44,7 @@ export function CollapsibleSection({
           ) : null}
         </div>
         <MaterialIcon
-          name={open ? "expand_less" : "expand_more"}
+          name={open ? "remove_circle" : "add_circle"}
           className="shrink-0 text-xl text-on-surface-variant"
         />
       </button>

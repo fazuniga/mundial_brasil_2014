@@ -134,6 +134,7 @@ const FIFA_TO_ISO: Record<string, string> = {
   TON: "to",
   KIR: "ki",
   TUV: "tv",
+  DRC: "cd",
 };
 
 export function teamInitials(teamCode: string): string {

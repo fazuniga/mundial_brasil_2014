@@ -6,7 +6,8 @@
 -- Catalog
 CREATE TABLE public.rounds (
   id_round smallint PRIMARY KEY,
-  name_round text NOT NULL UNIQUE
+  name_round text NOT NULL UNIQUE,
+  predictions_enabled boolean NOT NULL DEFAULT false
 );
 
 CREATE TABLE public.groups (
@@ -146,6 +147,10 @@ ALTER TABLE public.predictions ENABLE ROW LEVEL SECURITY;
 
 -- Public read for tournament data
 CREATE POLICY "Public read rounds" ON public.rounds FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Admins update rounds predictions_enabled"
+  ON public.rounds FOR UPDATE TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.profiles pr WHERE pr.id = auth.uid() AND pr.is_admin = true))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.profiles pr WHERE pr.id = auth.uid() AND pr.is_admin = true));
 CREATE POLICY "Public read groups" ON public.groups FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY "Public read venues" ON public.venues FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY "Public read teams" ON public.teams FOR SELECT TO anon, authenticated USING (true);
@@ -169,10 +174,22 @@ CREATE POLICY "Pools update own" ON public.pools FOR UPDATE TO authenticated USI
 CREATE POLICY "Predictions select own pool" ON public.predictions FOR SELECT TO authenticated
   USING (EXISTS (SELECT 1 FROM public.pools p WHERE p.id_pool = predictions.id_pool AND p.owner_id = auth.uid()));
 CREATE POLICY "Predictions insert own pool" ON public.predictions FOR INSERT TO authenticated
-  WITH CHECK (EXISTS (SELECT 1 FROM public.pools p WHERE p.id_pool = predictions.id_pool AND p.owner_id = auth.uid()));
+  WITH CHECK (
+    EXISTS (SELECT 1 FROM public.pools p WHERE p.id_pool = predictions.id_pool AND p.owner_id = auth.uid())
+    AND EXISTS (
+      SELECT 1 FROM public.v_fixture f
+      WHERE f.id_match = predictions.id_match AND f.predictions_open = true
+    )
+  );
 CREATE POLICY "Predictions update own pool" ON public.predictions FOR UPDATE TO authenticated
   USING (EXISTS (SELECT 1 FROM public.pools p WHERE p.id_pool = predictions.id_pool AND p.owner_id = auth.uid()))
-  WITH CHECK (EXISTS (SELECT 1 FROM public.pools p WHERE p.id_pool = predictions.id_pool AND p.owner_id = auth.uid()));
+  WITH CHECK (
+    EXISTS (SELECT 1 FROM public.pools p WHERE p.id_pool = predictions.id_pool AND p.owner_id = auth.uid())
+    AND EXISTS (
+      SELECT 1 FROM public.v_fixture f
+      WHERE f.id_match = predictions.id_match AND f.predictions_open = true
+    )
+  );
 
 -- Admin policies (match results, matrix) — service role or is_admin via security definer functions later
 CREATE POLICY "Admins manage match_results" ON public.match_results FOR ALL TO authenticated
@@ -389,11 +406,13 @@ SELECT
   v.city,
   v.stadium,
   CASE
+    WHEN NOT r.predictions_enabled THEN false
     WHEN EXTRACT(EPOCH FROM (
       (m.match_date + m.match_time) AT TIME ZONE 'America/New_York' - now()
     )) / 60 < 60 THEN false
     ELSE true
-  END AS predictions_open
+  END AS predictions_open,
+  r.predictions_enabled AS round_predictions_enabled
 FROM public.matches m
 JOIN public.rounds r ON r.id_round = m.id_round
 JOIN public.venues v ON v.id_venue = m.id_venue
@@ -418,6 +437,7 @@ SELECT
   gq_away.country AS away_country,
   f.city,
   f.stadium,
+  f.round_predictions_enabled,
   f.predictions_open
 FROM public.v_fixture f
 JOIN public.matches m ON m.id_match = f.id_match
@@ -465,14 +485,14 @@ GRANT SELECT ON public.v_prediction_side_bets TO anon, authenticated;
 -- ===== migrations/20260603000003_seed_catalog.sql =====
 -- Catalog seed for WC 2026 structure (teams/fixture to be loaded when draw is final)
 
-INSERT INTO public.rounds (id_round, name_round) VALUES
-  (1, 'Fase de Grupos'),
-  (2, 'Dieciseisavos de Final'),
-  (3, 'Octavos de Final'),
-  (4, 'Cuartos de Final'),
-  (5, 'Semifinal'),
-  (6, 'Tercer Lugar'),
-  (7, 'Final')
+INSERT INTO public.rounds (id_round, name_round, predictions_enabled) VALUES
+  (1, 'Fase de Grupos', true),
+  (2, 'Dieciseisavos de Final', false),
+  (3, 'Octavos de Final', false),
+  (4, 'Cuartos de Final', false),
+  (5, 'Semifinal', false),
+  (6, 'Tercer Lugar', false),
+  (7, 'Final', false)
 ON CONFLICT (id_round) DO NOTHING;
 
 INSERT INTO public.groups (group_code) VALUES

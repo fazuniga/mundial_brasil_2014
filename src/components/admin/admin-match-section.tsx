@@ -342,7 +342,7 @@ export function AdminMatchSection({
                         }
                       >
                         <MaterialIcon
-                          name={isExpanded ? "expand_less" : "expand_more"}
+                          name={isExpanded ? "remove_circle" : "add_circle"}
                           className="text-xl"
                         />
                       </button>

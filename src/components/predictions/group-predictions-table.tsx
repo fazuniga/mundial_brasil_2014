@@ -17,6 +17,8 @@ import type { FixtureRow, ScoringRuleRow } from "@/lib/predictions-types";
 import { MATCH_TIMEZONE_ABBR } from "@/lib/match-timezone";
 import {
   formatFixtureDateTime,
+  getFixturePredictionLock,
+  isFixtureSectionRoundClosed,
   isKnockoutFixture,
   type PredictionDraft,
 } from "@/lib/predictions-utils";
@@ -25,6 +27,7 @@ import { cn } from "@/lib/utils";
 type GroupPredictionsTableProps = {
   title: string;
   fixtures: FixtureRow[];
+  defaultOpen?: boolean;
   drafts: Record<number, PredictionDraft>;
   savedMatches: Set<number>;
   resultsByMatch: Record<number, MatchResultDetail>;
@@ -41,6 +44,7 @@ type GroupPredictionsTableProps = {
 export function GroupPredictionsTable({
   title,
   fixtures,
+  defaultOpen = true,
   drafts,
   savedMatches,
   resultsByMatch,
@@ -66,9 +70,20 @@ export function GroupPredictionsTable({
   }
 
   const subtitle = `${fixtures.length} partido${fixtures.length === 1 ? "" : "s"}`;
+  const roundClosed = isFixtureSectionRoundClosed(fixtures);
 
   return (
-    <CollapsibleSection title={title} subtitle={subtitle} defaultOpen>
+    <CollapsibleSection
+      title={title}
+      subtitle={subtitle}
+      defaultOpen={defaultOpen}
+      className={roundClosed ? "opacity-75" : undefined}
+    >
+      {roundClosed ? (
+        <p className="border-b border-outline-variant/40 bg-surface-container-low px-3 py-2.5 font-geist text-sm text-on-surface-variant">
+          Esta fase aún no está abierta para pronósticos
+        </p>
+      ) : null}
       <div className="flex flex-col gap-3 p-3 md:hidden">
         {fixtures.map((fixture) => {
           const draft = drafts[fixture.id_match] ?? {
@@ -108,10 +123,10 @@ export function GroupPredictionsTable({
               <th className="px-3 py-2.5 text-center font-geist text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
                 Marcador
               </th>
-              <th className="px-3 py-2.5 font-geist text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+              <th className="text-right px-3 py-2.5 font-geist text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
                 Visitante
               </th>
-              <th className="px-3 py-2.5 font-geist text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+              <th className="text-center px-3 py-2.5 font-geist text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
                 Estado
               </th>
             </tr>
@@ -124,8 +139,9 @@ export function GroupPredictionsTable({
                 extraTime: "",
                 firstGoalMinute: "",
               };
-              const isLocked = !fixture.predictions_open;
-              const canEdit = isAuthenticated && !isLocked;
+              const lock = getFixturePredictionLock(fixture);
+              const isLocked = lock !== "open";
+              const canEdit = isAuthenticated && lock === "open";
               const { dateShort, timeShort } = formatFixtureDateTime(
                 fixture.match_date,
                 fixture.match_time,
@@ -159,7 +175,7 @@ export function GroupPredictionsTable({
                         }
                       >
                         <MaterialIcon
-                          name={isExpanded ? "expand_less" : "expand_more"}
+                          name={isExpanded ? "remove_circle" : "add_circle"}
                           className="text-xl"
                         />
                         {sideBetsFilled > 0 && !isExpanded && (
@@ -204,7 +220,7 @@ export function GroupPredictionsTable({
                           className={desktopScoreInputClass}
                         />
                         <span className="font-headline text-base font-bold text-on-surface-variant">
-                          –
+                          -
                         </span>
                         <input
                           type="number"
@@ -232,7 +248,7 @@ export function GroupPredictionsTable({
 
                     <td className="px-3 py-3 align-middle">
                       <MatchStatusBadges
-                        isLocked={isLocked}
+                        lock={lock}
                         isSaved={isSaved}
                         canEdit={canEdit}
                         sideBetsFilled={sideBetsFilled}

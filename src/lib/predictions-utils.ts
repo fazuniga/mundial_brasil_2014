@@ -31,6 +31,53 @@ export function isKnockoutFixture(fixture: Pick<FixtureRow, "id_round">): boolea
   return fixture.id_round > 1;
 }
 
+export type FixturePredictionLock = "open" | "round_closed" | "kickoff_closed";
+
+export function getFixturePredictionLock(
+  fixture: Pick<
+    FixtureRow,
+    "round_predictions_enabled" | "predictions_open"
+  >,
+): FixturePredictionLock {
+  if (!fixture.round_predictions_enabled) return "round_closed";
+  if (!fixture.predictions_open) return "kickoff_closed";
+  return "open";
+}
+
+export function isFixtureSectionRoundClosed(fixtures: FixtureRow[]): boolean {
+  return fixtures.length > 0 && !fixtures[0].round_predictions_enabled;
+}
+
+/** Highest id_round with at least one fixture open for predictions. */
+export function getMaxEnabledPredictionRound(
+  fixtures: Pick<FixtureRow, "id_round" | "round_predictions_enabled">[],
+): number | null {
+  let max: number | null = null;
+  for (const fixture of fixtures) {
+    if (!fixture.round_predictions_enabled) continue;
+    max = max === null ? fixture.id_round : Math.max(max, fixture.id_round);
+  }
+  return max;
+}
+
+/**
+ * Collapse inactive rounds and any phase after the latest enabled id_round
+ * (future phases stay collapsed even if mistakenly re-enabled).
+ */
+export function isPredictionSectionDefaultOpen(
+  sectionFixtures: Pick<FixtureRow, "id_round" | "round_predictions_enabled">[],
+  maxEnabledRound: number | null,
+): boolean {
+  if (sectionFixtures.length === 0 || maxEnabledRound === null) return false;
+
+  const sectionIdRound = sectionFixtures[0].id_round;
+  const hasEnabledFixture = sectionFixtures.some(
+    (fixture) => fixture.round_predictions_enabled,
+  );
+
+  return hasEnabledFixture && sectionIdRound <= maxEnabledRound;
+}
+
 export async function ensureUserPool(userId: string): Promise<number> {
   const supabase = createClient();
 

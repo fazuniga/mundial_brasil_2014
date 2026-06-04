@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { HomeFixturesSection } from "@/components/home-fixtures-section";
 import { HomeHero } from "@/components/home-hero";
+import { MaterialIcon } from "@/components/material-icon";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SiteHeader } from "@/components/site-header";
 import { TournamentRoadmap } from "@/components/tournament-roadmap";
@@ -36,7 +38,7 @@ export default async function HomePage() {
     supabase
       .from("v_fixture")
       .select(
-        "id_match, id_round, name_round, group_code, dow, match_date, match_time, home_code, home_country, away_code, away_country, city, stadium, predictions_open",
+        "id_match, id_round, name_round, group_code, dow, match_date, match_time, home_code, home_country, away_code, away_country, city, stadium, round_predictions_enabled, predictions_open",
       )
       .order("match_date")
       .order("match_time"),
@@ -59,6 +61,14 @@ export default async function HomePage() {
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-section-gap px-gutter-md pb-24 pt-[calc(4rem+2rem)] md:pb-8">
         <HomeHero isAuthenticated={!!user} />
         <TournamentRoadmap rounds={rounds ?? []} />
+
+        <Link
+          href="/grupos"
+          className="font-geist inline-flex w-max items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary-container"
+        >
+          <MaterialIcon name="grid_view" className="text-lg" />
+          Ver posiciones por grupo
+        </Link>
 
         <HomeFixturesSection
           upcoming={upcoming}

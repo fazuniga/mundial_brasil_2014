@@ -24,7 +24,9 @@ import {
   draftsAreEqual,
   ensureUserPool,
   filterSectionsBySearch,
+  getMaxEnabledPredictionRound,
   groupFixturesBySection,
+  isPredictionSectionDefaultOpen,
   isKnockoutFixture,
   isPredictionSaved,
   isTopScorerSaved,
@@ -101,6 +103,10 @@ export function PredictionsClient({
 }: PredictionsClientProps) {
   const router = useRouter();
   const sections = useMemo(() => groupFixturesBySection(fixtures), [fixtures]);
+  const maxEnabledRound = useMemo(
+    () => getMaxEnabledPredictionRound(fixtures),
+    [fixtures],
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const filteredSections = useMemo(
     () => filterSectionsBySearch(sections, searchQuery),
@@ -410,6 +416,10 @@ export function PredictionsClient({
               key={section.key}
               title={section.title}
               fixtures={section.fixtures}
+              defaultOpen={isPredictionSectionDefaultOpen(
+                section.fixtures,
+                maxEnabledRound,
+              )}
               drafts={drafts}
               savedMatches={savedMatches}
               resultsByMatch={resultsByMatch}

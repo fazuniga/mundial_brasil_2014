@@ -12,7 +12,14 @@ export type FixtureRow = {
   away_country: string;
   city: string;
   stadium: string;
+  round_predictions_enabled: boolean;
   predictions_open: boolean;
+};
+
+export type RoundPhaseRow = {
+  id_round: number;
+  name_round: string;
+  predictions_enabled: boolean;
 };
 
 export type ScoringRuleRow = {

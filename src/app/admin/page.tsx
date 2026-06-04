@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SiteHeader } from "@/components/site-header";
 import { AdminClient } from "@/components/admin/admin-client";
+import { AdminRoundPhases } from "@/components/admin/admin-round-phases";
 import type { FixtureRow, PlayerRow } from "@/lib/predictions-types";
 import type { MatchGoalRow, MatchResultRow, MatchTeamRow } from "@/lib/admin-types";
 import { mergeFixturesWithTeams } from "@/lib/admin-utils";
@@ -29,6 +30,7 @@ export default async function AdminPage() {
 
   const [
     { data: fixturesRaw },
+    { data: roundsRaw },
     { data: resultsRaw },
     { data: teamsRaw },
     { data: playersRaw },
@@ -38,10 +40,14 @@ export default async function AdminPage() {
     supabase
       .from("v_fixture")
       .select(
-        "id_match, id_round, name_round, group_code, dow, match_date, match_time, home_code, home_country, away_code, away_country, city, stadium, predictions_open",
+        "id_match, id_round, name_round, group_code, dow, match_date, match_time, home_code, home_country, away_code, away_country, city, stadium, round_predictions_enabled, predictions_open",
       )
       .order("match_date")
       .order("match_time"),
+    supabase
+      .from("rounds")
+      .select("id_round, name_round, predictions_enabled")
+      .order("id_round"),
     supabase.from("match_results").select("*"),
     supabase.from("matches").select("id_match, home_team_id, away_team_id"),
     supabase
@@ -105,6 +111,8 @@ export default async function AdminPage() {
             administrador.
           </p>
         </header>
+
+        <AdminRoundPhases rounds={roundsRaw ?? []} />
 
         <AdminClient
           fixtures={fixtures}

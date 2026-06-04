@@ -2,7 +2,10 @@
 
 import { MaterialIcon } from "@/components/material-icon";
 import { teamFlagUrl, teamInitials } from "@/lib/team-display";
-import type { PredictionDraft } from "@/lib/predictions-utils";
+import type {
+  FixturePredictionLock,
+  PredictionDraft,
+} from "@/lib/predictions-utils";
 import { cn } from "@/lib/utils";
 
 export const desktopScoreInputClass =
@@ -86,48 +89,49 @@ export function TeamCell({
 }
 
 export function MatchStatusBadges({
-  isLocked,
+  lock = "open",
   isSaved,
   canEdit,
   sideBetsFilled,
   isExpanded,
   layout = "stack",
 }: {
-  isLocked: boolean;
+  lock?: FixturePredictionLock;
   isSaved: boolean;
   canEdit: boolean;
   sideBetsFilled: number;
   isExpanded: boolean;
   layout?: "stack" | "row";
 }) {
+  const isLocked = lock !== "open";
   return (
     <div
       className={cn(
-        "flex gap-1",
+        "flex gap-1 justify-center",
         layout === "row"
           ? "flex-wrap items-center justify-center gap-x-3 gap-y-1"
           : "flex-col",
       )}
     >
       {isLocked ? (
-        <span className="inline-flex items-center gap-1 font-geist text-xs text-on-surface-variant">
+        <span className="inline-flex justify-center gap-1 font-geist text-xs text-on-surface-variant justify-center">
           <MaterialIcon name="lock" className="text-sm" />
-          Cerrado
+          {lock === "round_closed" ? "Fase cerrada" : "Cerrado"}
         </span>
       ) : (
-        <span className="inline-flex items-center gap-1 font-geist text-xs text-primary">
+        <span className="inline-flex justify-center items-center gap-1 font-geist text-xs text-primary">
           <MaterialIcon name="edit_calendar" className="text-sm" />
           Abierto
         </span>
       )}
       {isSaved && canEdit && (
-        <span className="inline-flex items-center gap-1 font-geist text-xs text-primary">
+        <span className="inline-flex justify-center items-center gap-1 font-geist text-xs text-primary">
           <MaterialIcon name="check_circle" className="text-sm" />
           Guardado
         </span>
       )}
       {sideBetsFilled > 0 && !isExpanded && (
-        <span className="inline-flex items-center gap-1 font-geist text-xs text-on-surface-variant">
+        <span className="inline-flex justify-center items-center gap-1 font-geist text-xs text-on-surface-variant">
           <MaterialIcon name="sports_soccer" className="text-sm" />
           +{sideBetsFilled} apuesta{sideBetsFilled === 1 ? "" : "s"}
         </span>
