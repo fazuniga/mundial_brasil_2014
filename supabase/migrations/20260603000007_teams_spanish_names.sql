@@ -1,0 +1,57 @@
+-- Display names for the 48 World Cup 2026 group teams (teams.country).
+-- FIFA codes (teams.code) and group assignments unchanged.
+UPDATE public.teams AS t
+SET country = v.country
+FROM (
+  VALUES
+    ('MEX', 'México'),
+    ('RSA', 'Sudáfrica'),
+    ('KOR', 'Corea del Sur'),
+    ('CZE', 'República Checa'),
+    ('CAN', 'Canadá'),
+    ('BIH', 'Bosnia y Herzegovina'),
+    ('QAT', 'Catar'),
+    ('SUI', 'Suiza'),
+    ('BRA', 'Brasil'),
+    ('MAR', 'Marruecos'),
+    ('HAI', 'Haití'),
+    ('SCO', 'Escocia'),
+    ('USA', 'Estados Unidos'),
+    ('PAR', 'Paraguay'),
+    ('AUS', 'Australia'),
+    ('TUR', 'Turquía'),
+    ('GER', 'Alemania'),
+    ('CUW', 'Curazao'),
+    ('CIV', 'Costa de Marfil'),
+    ('ECU', 'Ecuador'),
+    ('NED', 'Países Bajos'),
+    ('JPN', 'Japón'),
+    ('SWE', 'Suecia'),
+    ('TUN', 'Túnez'),
+    ('BEL', 'Bélgica'),
+    ('EGY', 'Egipto'),
+    ('IRN', 'Irán'),
+    ('NZL', 'Nueva Zelanda'),
+    ('ESP', 'España'),
+    ('CPV', 'Cabo Verde'),
+    ('KSA', 'Arabia Saudita'),
+    ('URY', 'Uruguay'),
+    ('FRA', 'Francia'),
+    ('SEN', 'Senegal'),
+    ('IRQ', 'Irak'),
+    ('NOR', 'Noruega'),
+    ('ARG', 'Argentina'),
+    ('ALG', 'Argelia'),
+    ('AUT', 'Austria'),
+    ('JOR', 'Jordania'),
+    ('POR', 'Portugal'),
+    ('COD', 'República Democrática del Congo'),
+    ('UZB', 'Uzbekistán'),
+    ('COL', 'Colombia'),
+    ('ENG', 'Inglaterra'),
+    ('CRO', 'Croacia'),
+    ('GHA', 'Ghana'),
+    ('PAN', 'Panamá')
+) AS v (code, country)
+WHERE t.code = v.code::char(3)
+  AND t.id_group IS NOT NULL;

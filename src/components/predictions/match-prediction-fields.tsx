@@ -1,0 +1,137 @@
+"use client";
+
+import { MaterialIcon } from "@/components/material-icon";
+import { teamFlagUrl, teamInitials } from "@/lib/team-display";
+import type { PredictionDraft } from "@/lib/predictions-utils";
+import { cn } from "@/lib/utils";
+
+export const desktopScoreInputClass =
+  "h-9 w-11 rounded-md border border-outline-variant bg-surface-container-lowest text-center font-headline text-lg font-bold text-on-surface tabular-nums transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:w-12 sm:text-xl";
+
+export const mobileScoreInputClass =
+  "h-11 min-h-[44px] w-14 min-w-[44px] rounded-lg border border-outline-variant bg-surface-container-lowest text-center font-headline text-2xl font-bold text-on-surface tabular-nums transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50";
+
+export function sideBetCount(draft: PredictionDraft, isKnockout: boolean): number {
+  let count = 0;
+  if (isKnockout && draft.extraTime !== "") count++;
+  if (draft.firstGoalMinute !== "") count++;
+  return count;
+}
+
+export function TeamCell({
+  country,
+  code,
+  align,
+  size = "default",
+  truncateName = true,
+}: {
+  country: string;
+  code: string;
+  align: "left" | "right";
+  size?: "default" | "large";
+  truncateName?: boolean;
+}) {
+  const flagUrl = teamFlagUrl(code);
+  const isLarge = size === "large";
+
+  return (
+    <div
+      className={cn(
+        "flex min-w-0 flex-1 items-center gap-2",
+        align === "right" && "flex-row-reverse text-right",
+        !isLarge && align === "left" && "max-w-none",
+      )}
+    >
+      <div
+        className={cn(
+          "flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-outline-variant/50 bg-surface-container-high",
+          isLarge ? "h-10 w-10" : "h-7 w-7",
+        )}
+      >
+        {flagUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={flagUrl}
+            alt={country}
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        ) : (
+          <span
+            className={cn(
+              "font-mono font-bold text-primary",
+              isLarge ? "text-xs" : "text-[10px]",
+            )}
+          >
+            {teamInitials(code)}
+          </span>
+        )}
+      </div>
+      <div className="min-w-0">
+        <p
+          className={cn(
+            "font-geist font-medium text-on-surface",
+            isLarge ? "text-sm" : "text-sm",
+            truncateName ? "truncate" : "break-words leading-snug",
+          )}
+        >
+          {country}
+        </p>
+        <p className="font-mono text-[10px] text-on-surface-variant">{code}</p>
+      </div>
+    </div>
+  );
+}
+
+export function MatchStatusBadges({
+  isLocked,
+  isSaved,
+  canEdit,
+  sideBetsFilled,
+  isExpanded,
+  layout = "stack",
+}: {
+  isLocked: boolean;
+  isSaved: boolean;
+  canEdit: boolean;
+  sideBetsFilled: number;
+  isExpanded: boolean;
+  layout?: "stack" | "row";
+}) {
+  return (
+    <div
+      className={cn(
+        "flex gap-1",
+        layout === "row"
+          ? "flex-wrap items-center justify-center gap-x-3 gap-y-1"
+          : "flex-col",
+      )}
+    >
+      {isLocked ? (
+        <span className="inline-flex items-center gap-1 font-geist text-xs text-on-surface-variant">
+          <MaterialIcon name="lock" className="text-sm" />
+          Cerrado
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-1 font-geist text-xs text-primary">
+          <MaterialIcon name="edit_calendar" className="text-sm" />
+          Abierto
+        </span>
+      )}
+      {isSaved && canEdit && (
+        <span className="inline-flex items-center gap-1 font-geist text-xs text-primary">
+          <MaterialIcon name="check_circle" className="text-sm" />
+          Guardado
+        </span>
+      )}
+      {sideBetsFilled > 0 && !isExpanded && (
+        <span className="inline-flex items-center gap-1 font-geist text-xs text-on-surface-variant">
+          <MaterialIcon name="sports_soccer" className="text-sm" />
+          +{sideBetsFilled} apuesta{sideBetsFilled === 1 ? "" : "s"}
+        </span>
+      )}
+    </div>
+  );
+}

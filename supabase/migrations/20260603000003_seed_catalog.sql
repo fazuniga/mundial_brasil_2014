@@ -21,7 +21,8 @@ INSERT INTO public.scoring_rules (rule_key, points) VALUES
   ('winner', 1),
   ('extra_time', 1),
   ('first_goal_minute', 1),
-  ('first_goal_scorer', 1)
+  ('top_scorer_player', 10),
+  ('top_scorer_goals', 15)
 ON CONFLICT (rule_key) DO NOTHING;
 
 -- Placeholder knockout slots (extend when official bracket is published)

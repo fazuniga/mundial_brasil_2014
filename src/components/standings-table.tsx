@@ -22,17 +22,17 @@ export function StandingsTable({ rows }: StandingsTableProps) {
       <table className="w-full text-left text-sm">
         <thead>
           <tr className="border-b border-border bg-muted/50">
-            <th className="px-3 py-3 font-medium">group_code</th>
-            <th className="px-3 py-3 font-medium">team_name</th>
-            <th className="px-3 py-3 font-medium">team_code</th>
-            <th className="px-3 py-3 font-medium text-right">played</th>
-            <th className="px-3 py-3 font-medium text-right">wins</th>
-            <th className="px-3 py-3 font-medium text-right">draws</th>
-            <th className="px-3 py-3 font-medium text-right">losses</th>
-            <th className="px-3 py-3 font-medium text-right">goals_for</th>
-            <th className="px-3 py-3 font-medium text-right">goals_against</th>
-            <th className="px-3 py-3 font-medium text-right">goal_diff</th>
-            <th className="px-3 py-3 font-medium text-right">points</th>
+            <th className="px-3 py-3 font-medium">Grupo</th>
+            <th className="px-3 py-3 font-medium">Equipo</th>
+            <th className="px-3 py-3 font-medium">Código</th>
+            <th className="px-3 py-3 font-medium text-right">PJ</th>
+            <th className="px-3 py-3 font-medium text-right">G</th>
+            <th className="px-3 py-3 font-medium text-right">E</th>
+            <th className="px-3 py-3 font-medium text-right">P</th>
+            <th className="px-3 py-3 font-medium text-right">GF</th>
+            <th className="px-3 py-3 font-medium text-right">GC</th>
+            <th className="px-3 py-3 font-medium text-right">DG</th>
+            <th className="px-3 py-3 font-medium text-right">Pts</th>
           </tr>
         </thead>
         <tbody>

@@ -109,8 +109,14 @@ CREATE TABLE public.predictions (
   goals_away smallint,
   goals_home_pt smallint,
   goals_away_pt smallint,
-  first_goal_minute smallint,
-  first_goal_player_id smallint,
+  extra_time boolean,
+  first_goal_minute text CHECK (
+    first_goal_minute IS NULL
+    OR first_goal_minute IN (
+      '0-15', '16-30', '31-45', '45+_1T',
+      '46-60', '61-75', '76-90', '90+_2T'
+    )
+  ),
   PRIMARY KEY (id_pool, id_match)
 );
 

@@ -1,62 +1,106 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { MaterialIcon } from "@/components/material-icon";
 import { cn } from "@/lib/utils";
 
 type SiteHeaderProps = {
   userEmail?: string | null;
+  isAdmin?: boolean;
+  activeNav?: "home" | "matches" | "profile";
 };
 
 const navLinkClass =
-  "inline-flex h-8 items-center justify-center rounded-lg px-3 text-xs font-medium transition-colors";
+  "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-150 active:scale-95";
 
-export function SiteHeader({ userEmail }: SiteHeaderProps) {
+export function SiteHeader({
+  userEmail,
+  isAdmin = false,
+  activeNav = "home",
+}: SiteHeaderProps) {
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-6">
-        <Link
-          href="/"
-          className="flex flex-col gap-0.5 transition-opacity hover:opacity-80"
-        >
-          <span className="text-lg font-bold tracking-tight text-foreground">
+    <header className="fixed top-0 z-50 w-full border-b border-outline-variant/40 bg-surface/95 shadow-sm backdrop-blur-md">
+      <div className="mx-auto flex h-header-height w-full max-w-7xl items-center justify-between px-gutter-md">
+        <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
+          <MaterialIcon name="sports_soccer" className="text-3xl text-primary" />
+          <h1 className="font-headline text-xl font-bold text-primary md:text-3xl">
             Polla Mundial 2026
-          </span>
-          <span className="text-xs text-muted-foreground">
-            Prode del Mundial USA, México y Canadá 2026
-          </span>
+          </h1>
         </Link>
 
-        <nav className="flex items-center gap-2">
+        <nav className="hidden items-center gap-2 md:flex">
+          <Link
+            href="/"
+            className={cn(
+              navLinkClass,
+              activeNav === "home"
+                ? "bg-surface-container-high font-bold text-primary"
+                : "text-on-surface-variant hover:bg-surface-container-high",
+            )}
+          >
+            <MaterialIcon name="home" filled={activeNav === "home"} className="text-xl" />
+            Inicio
+          </Link>
+          <Link
+            href="/predictions"
+            className={cn(
+              navLinkClass,
+              activeNav === "matches"
+                ? "bg-surface-container-high font-bold text-primary"
+                : "text-on-surface-variant hover:bg-surface-container-high",
+            )}
+          >
+            <MaterialIcon name="event_note" filled={activeNav === "matches"} className="text-xl" />
+            Partidos
+          </Link>
+          <Link
+            href="/profile"
+            className={cn(
+              navLinkClass,
+              activeNav === "profile"
+                ? "bg-surface-container-high font-bold text-primary"
+                : "text-on-surface-variant hover:bg-surface-container-high",
+            )}
+          >
+            <MaterialIcon name="person" filled={activeNav === "profile"} className="text-xl" />
+            Perfil
+          </Link>
+        </nav>
+
+        <div className="hidden md:flex">
           {userEmail ? (
-            <>
-              <span className="hidden max-w-48 truncate text-sm text-muted-foreground sm:inline">
+            <div className="flex items-center gap-3">
+              {isAdmin ? (
+                <Link
+                  href="/admin"
+                  className={cn(
+                    navLinkClass,
+                    "border border-accent/30 bg-accent/10 text-primary hover:bg-accent/20",
+                  )}
+                >
+                  <MaterialIcon name="admin_panel_settings" className="text-xl" />
+                  Administración
+                </Link>
+              ) : null}
+              <span className="max-w-40 truncate text-sm text-on-surface-variant">
                 {userEmail}
               </span>
               <form action="/auth/signout" method="post">
-                <Button type="submit" variant="outline" size="sm">
+                <button
+                  type="submit"
+                  className="rounded-lg border border-outline-variant px-4 py-2 text-xs font-medium transition-colors hover:bg-surface-container-high"
+                >
                   Salir
-                </Button>
+                </button>
               </form>
-            </>
+            </div>
           ) : (
-            <>
-              <Link
-                href="/login"
-                className={cn(navLinkClass, "text-foreground hover:bg-muted")}
-              >
-                Ingresar
-              </Link>
-              <Link
-                href="/register"
-                className={cn(
-                  navLinkClass,
-                  "bg-primary text-primary-foreground hover:bg-primary-hover shadow-sm",
-                )}
-              >
-                Registro
-              </Link>
-            </>
+            <Link
+              href="/login"
+              className="flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground shadow-sm transition-colors duration-150 hover:bg-primary-container active:scale-95"
+            >
+              Iniciar sesión
+            </Link>
           )}
-        </nav>
+        </div>
       </div>
     </header>
   );

@@ -1,11 +1,8 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { AuthLayout } from "@/components/auth-layout";
+import { MaterialIcon } from "@/components/material-icon";
 import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -14,6 +11,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -36,44 +34,120 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthLayout
-      title="Ingresar"
-      description="Supabase Auth — Polla Mundial 2026 (Brasil 2014 polla port)."
-    >
-      <form onSubmit={handleLogin} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+    <main className="flex min-h-screen flex-grow items-center justify-center p-gutter-md">
+      <div className="mx-auto flex w-full max-w-7xl justify-center">
+        <div className="w-full max-w-md">
+        <div className="overflow-hidden rounded-xl border border-outline-variant/60 bg-card shadow-md">
+          <div className="flex flex-col gap-6 p-6 md:p-8">
+            <div className="space-y-2 text-center">
+              <p className="font-geist text-xs font-semibold uppercase tracking-widest text-accent">
+                Polla Mundial 2026
+              </p>
+              <h1 className="font-headline flex items-center justify-center gap-2 text-3xl font-bold text-primary">
+                <MaterialIcon name="sports_soccer" filled className="text-3xl" />
+                Iniciar sesión
+              </h1>
+              <p className="font-geist text-sm text-on-surface-variant">
+                Accede a tus pronósticos y la clasificación del torneo.
+              </p>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="email"
+                  className="font-geist text-xs font-medium text-on-surface"
+                >
+                  Correo electrónico
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  placeholder="nombre@ejemplo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-10 rounded border border-outline-variant bg-surface-container-lowest px-3 text-sm text-on-surface transition-all placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="password"
+                    className="font-geist text-xs font-medium text-on-surface"
+                  >
+                    Contraseña
+                  </label>
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-10 rounded border border-outline-variant bg-surface-container-lowest px-3 text-sm text-on-surface transition-all placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  id="remember"
+                  name="remember"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="rounded border-outline-variant text-primary focus:ring-primary/20"
+                />
+                <label
+                  htmlFor="remember"
+                  className="font-geist cursor-pointer select-none text-sm text-on-surface-variant"
+                >
+                  Recordarme por 30 días
+                </label>
+              </div>
+
+              {error && <Alert variant="destructive">{error}</Alert>}
+
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="font-geist flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-xs font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary-container active:scale-[0.98] disabled:opacity-50"
+                >
+                  {loading ? "Iniciando sesión…" : "Iniciar sesión"}
+                  <MaterialIcon name="login" className="text-[18px]" />
+                </button>
+              </div>
+            </form>
+
+            <div className="pt-2 text-center">
+              <p className="font-geist text-sm text-on-surface-variant">
+                ¿No tienes cuenta?{" "}
+                <Link
+                  href="/register"
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  Regístrate para jugar
+                </Link>
+              </p>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="password">Contraseña</Label>
-          <Input
-            id="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+
+        <div className="mx-auto mt-8 max-w-sm px-4 text-center">
+          <p className="font-geist text-sm italic text-on-surface-variant">
+            &ldquo;La pelota es redonda, el partido dura noventa minutos y todo lo
+            demás es pura teoría.&rdquo;
+          </p>
         </div>
-        {error && <Alert variant="destructive">{error}</Alert>}
-        <Button type="submit" disabled={loading} className="w-full">
-          {loading ? "Entrando…" : "Entrar"}
-        </Button>
-      </form>
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        ¿Sin cuenta?{" "}
-        <Link href="/register" className="font-medium text-primary hover:underline">
-          Registrarse
-        </Link>
-      </p>
-    </AuthLayout>
+        </div>
+      </div>
+    </main>
   );
 }

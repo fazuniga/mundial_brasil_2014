@@ -112,8 +112,14 @@ CREATE TABLE public.predictions (
   goals_away smallint,
   goals_home_pt smallint,
   goals_away_pt smallint,
-  first_goal_minute smallint,
-  first_goal_player_id smallint,
+  extra_time boolean,
+  first_goal_minute text CHECK (
+    first_goal_minute IS NULL
+    OR first_goal_minute IN (
+      '0-15', '16-30', '31-45', '45+_1T',
+      '46-60', '61-75', '76-90', '90+_2T'
+    )
+  ),
   PRIMARY KEY (id_pool, id_match)
 );
 
@@ -182,6 +188,26 @@ CREATE POLICY "Public read third_place_matrix" ON public.third_place_matrix FOR 
 -- ===== migrations/20260603000002_engine_views.sql =====
 -- Tournament engine views (2026 format). security_invoker so RLS applies.
 
+CREATE OR REPLACE FUNCTION public.minute_to_first_goal_range(minute int)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE
+AS $$
+  SELECT CASE
+    WHEN minute IS NULL THEN NULL
+    WHEN minute BETWEEN 451 AND 459 THEN '45+_1T'
+    WHEN minute BETWEEN 901 AND 909 THEN '90+_2T'
+    WHEN minute <= 15 THEN '0-15'
+    WHEN minute <= 30 THEN '16-30'
+    WHEN minute <= 45 THEN '31-45'
+    WHEN minute <= 60 THEN '46-60'
+    WHEN minute <= 75 THEN '61-75'
+    WHEN minute <= 90 THEN '76-90'
+    WHEN minute > 90 THEN '90+_2T'
+    ELSE NULL
+  END;
+$$;
+
 -- Core match results with winner logic (from vw_results)
 CREATE OR REPLACE VIEW public.v_results
 WITH (security_invoker = true) AS
@@ -230,7 +256,8 @@ SELECT
             WHEN COALESCE(mr.pens_home, 0) < COALESCE(mr.pens_away, 0) THEN ta.country
           END
       END
-  END AS winner_country
+  END AS winner_country,
+  public.minute_to_first_goal_range(mr.first_goal_minute) AS first_goal_minute_range
 FROM public.matches m
 JOIN public.rounds r ON r.id_round = m.id_round
 JOIN public.teams th ON th.id_team = m.home_team_id
@@ -400,6 +427,32 @@ JOIN public.knockout_slots ks_away ON ks_away.id_slot = m.away_slot_id
 JOIN public.v_group_qualifiers gq_away ON gq_away.slot_label = ks_away.label
 WHERE f.id_round = 2;
 
+CREATE OR REPLACE VIEW public.v_prediction_side_bets
+WITH (security_invoker = true) AS
+SELECT
+  p.id_pool,
+  p.id_match,
+  vr.first_goal_minute_range AS actual_first_goal_range,
+  p.first_goal_minute AS predicted_first_goal_range,
+  (
+    p.first_goal_minute IS NOT NULL
+    AND vr.first_goal_minute_range IS NOT NULL
+    AND p.first_goal_minute = vr.first_goal_minute_range
+  ) AS first_goal_minute_hit,
+  (
+    vr.id_round > 1
+    AND p.extra_time IS NOT NULL
+    AND vr.goals_home IS NOT NULL
+    AND p.extra_time = (
+      COALESCE(vr.goals_home_et, 0) <> COALESCE(vr.goals_home, 0)
+      OR COALESCE(vr.goals_away_et, 0) <> COALESCE(vr.goals_away, 0)
+      OR COALESCE(vr.pens_home, 0) > 0
+      OR COALESCE(vr.pens_away, 0) > 0
+    )
+  ) AS extra_time_hit
+FROM public.predictions p
+JOIN public.v_results vr ON vr.id_match = p.id_match;
+
 GRANT SELECT ON public.v_results TO anon, authenticated;
 GRANT SELECT ON public.v_group_standings TO anon, authenticated;
 GRANT SELECT ON public.v_qualified_top_two TO anon, authenticated;
@@ -407,6 +460,7 @@ GRANT SELECT ON public.v_best_third_places TO anon, authenticated;
 GRANT SELECT ON public.v_group_qualifiers TO anon, authenticated;
 GRANT SELECT ON public.v_fixture TO anon, authenticated;
 GRANT SELECT ON public.v_round_of_32_teams TO anon, authenticated;
+GRANT SELECT ON public.v_prediction_side_bets TO anon, authenticated;
 
 -- ===== migrations/20260603000003_seed_catalog.sql =====
 -- Catalog seed for WC 2026 structure (teams/fixture to be loaded when draw is final)
@@ -572,54 +626,54 @@ INSERT INTO public.venues (city, stadium) VALUES
   ('Miami','Hard Rock Stadium'),
   ('Atlanta','Mercedes-Benz Stadium')
 ;
-INSERT INTO public.teams (country, id_group, code) SELECT 'Mexico', id_group, 'MEX' FROM public.groups WHERE group_code='A';
-INSERT INTO public.teams (country, id_group, code) SELECT 'South Africa', id_group, 'RSA' FROM public.groups WHERE group_code='A';
-INSERT INTO public.teams (country, id_group, code) SELECT 'South Korea', id_group, 'KOR' FROM public.groups WHERE group_code='A';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Czech Republic', id_group, 'CZE' FROM public.groups WHERE group_code='A';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Canada', id_group, 'CAN' FROM public.groups WHERE group_code='B';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Bosnia and Herzegovina', id_group, 'BIH' FROM public.groups WHERE group_code='B';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Qatar', id_group, 'QAT' FROM public.groups WHERE group_code='B';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Switzerland', id_group, 'SUI' FROM public.groups WHERE group_code='B';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Brazil', id_group, 'BRA' FROM public.groups WHERE group_code='C';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Morocco', id_group, 'MAR' FROM public.groups WHERE group_code='C';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Haiti', id_group, 'HAI' FROM public.groups WHERE group_code='C';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Scotland', id_group, 'SCO' FROM public.groups WHERE group_code='C';
-INSERT INTO public.teams (country, id_group, code) SELECT 'United States', id_group, 'USA' FROM public.groups WHERE group_code='D';
+INSERT INTO public.teams (country, id_group, code) SELECT 'México', id_group, 'MEX' FROM public.groups WHERE group_code='A';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Sudáfrica', id_group, 'RSA' FROM public.groups WHERE group_code='A';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Corea del Sur', id_group, 'KOR' FROM public.groups WHERE group_code='A';
+INSERT INTO public.teams (country, id_group, code) SELECT 'República Checa', id_group, 'CZE' FROM public.groups WHERE group_code='A';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Canadá', id_group, 'CAN' FROM public.groups WHERE group_code='B';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Bosnia y Herzegovina', id_group, 'BIH' FROM public.groups WHERE group_code='B';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Catar', id_group, 'QAT' FROM public.groups WHERE group_code='B';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Suiza', id_group, 'SUI' FROM public.groups WHERE group_code='B';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Brasil', id_group, 'BRA' FROM public.groups WHERE group_code='C';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Marruecos', id_group, 'MAR' FROM public.groups WHERE group_code='C';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Haití', id_group, 'HAI' FROM public.groups WHERE group_code='C';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Escocia', id_group, 'SCO' FROM public.groups WHERE group_code='C';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Estados Unidos', id_group, 'USA' FROM public.groups WHERE group_code='D';
 INSERT INTO public.teams (country, id_group, code) SELECT 'Paraguay', id_group, 'PAR' FROM public.groups WHERE group_code='D';
 INSERT INTO public.teams (country, id_group, code) SELECT 'Australia', id_group, 'AUS' FROM public.groups WHERE group_code='D';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Turkey', id_group, 'TUR' FROM public.groups WHERE group_code='D';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Germany', id_group, 'GER' FROM public.groups WHERE group_code='E';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Curaçao', id_group, 'CUW' FROM public.groups WHERE group_code='E';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Ivory Coast', id_group, 'CIV' FROM public.groups WHERE group_code='E';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Turquía', id_group, 'TUR' FROM public.groups WHERE group_code='D';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Alemania', id_group, 'GER' FROM public.groups WHERE group_code='E';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Curazao', id_group, 'CUW' FROM public.groups WHERE group_code='E';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Costa de Marfil', id_group, 'CIV' FROM public.groups WHERE group_code='E';
 INSERT INTO public.teams (country, id_group, code) SELECT 'Ecuador', id_group, 'ECU' FROM public.groups WHERE group_code='E';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Netherlands', id_group, 'NED' FROM public.groups WHERE group_code='F';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Japan', id_group, 'JPN' FROM public.groups WHERE group_code='F';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Sweden', id_group, 'SWE' FROM public.groups WHERE group_code='F';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Tunisia', id_group, 'TUN' FROM public.groups WHERE group_code='F';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Belgium', id_group, 'BEL' FROM public.groups WHERE group_code='G';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Egypt', id_group, 'EGY' FROM public.groups WHERE group_code='G';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Iran', id_group, 'IRN' FROM public.groups WHERE group_code='G';
-INSERT INTO public.teams (country, id_group, code) SELECT 'New Zealand', id_group, 'NZL' FROM public.groups WHERE group_code='G';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Spain', id_group, 'ESP' FROM public.groups WHERE group_code='H';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Cape Verde', id_group, 'CPV' FROM public.groups WHERE group_code='H';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Saudi Arabia', id_group, 'KSA' FROM public.groups WHERE group_code='H';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Países Bajos', id_group, 'NED' FROM public.groups WHERE group_code='F';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Japón', id_group, 'JPN' FROM public.groups WHERE group_code='F';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Suecia', id_group, 'SWE' FROM public.groups WHERE group_code='F';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Túnez', id_group, 'TUN' FROM public.groups WHERE group_code='F';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Bélgica', id_group, 'BEL' FROM public.groups WHERE group_code='G';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Egipto', id_group, 'EGY' FROM public.groups WHERE group_code='G';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Irán', id_group, 'IRN' FROM public.groups WHERE group_code='G';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Nueva Zelanda', id_group, 'NZL' FROM public.groups WHERE group_code='G';
+INSERT INTO public.teams (country, id_group, code) SELECT 'España', id_group, 'ESP' FROM public.groups WHERE group_code='H';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Cabo Verde', id_group, 'CPV' FROM public.groups WHERE group_code='H';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Arabia Saudita', id_group, 'KSA' FROM public.groups WHERE group_code='H';
 INSERT INTO public.teams (country, id_group, code) SELECT 'Uruguay', id_group, 'URY' FROM public.groups WHERE group_code='H';
-INSERT INTO public.teams (country, id_group, code) SELECT 'France', id_group, 'FRA' FROM public.groups WHERE group_code='I';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Francia', id_group, 'FRA' FROM public.groups WHERE group_code='I';
 INSERT INTO public.teams (country, id_group, code) SELECT 'Senegal', id_group, 'SEN' FROM public.groups WHERE group_code='I';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Iraq', id_group, 'IRQ' FROM public.groups WHERE group_code='I';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Norway', id_group, 'NOR' FROM public.groups WHERE group_code='I';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Irak', id_group, 'IRQ' FROM public.groups WHERE group_code='I';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Noruega', id_group, 'NOR' FROM public.groups WHERE group_code='I';
 INSERT INTO public.teams (country, id_group, code) SELECT 'Argentina', id_group, 'ARG' FROM public.groups WHERE group_code='J';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Algeria', id_group, 'ALG' FROM public.groups WHERE group_code='J';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Argelia', id_group, 'ALG' FROM public.groups WHERE group_code='J';
 INSERT INTO public.teams (country, id_group, code) SELECT 'Austria', id_group, 'AUT' FROM public.groups WHERE group_code='J';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Jordan', id_group, 'JOR' FROM public.groups WHERE group_code='J';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Jordania', id_group, 'JOR' FROM public.groups WHERE group_code='J';
 INSERT INTO public.teams (country, id_group, code) SELECT 'Portugal', id_group, 'POR' FROM public.groups WHERE group_code='K';
-INSERT INTO public.teams (country, id_group, code) SELECT 'DR Congo', id_group, 'COD' FROM public.groups WHERE group_code='K';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Uzbekistan', id_group, 'UZB' FROM public.groups WHERE group_code='K';
+INSERT INTO public.teams (country, id_group, code) SELECT 'República Democrática del Congo', id_group, 'COD' FROM public.groups WHERE group_code='K';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Uzbekistán', id_group, 'UZB' FROM public.groups WHERE group_code='K';
 INSERT INTO public.teams (country, id_group, code) SELECT 'Colombia', id_group, 'COL' FROM public.groups WHERE group_code='K';
-INSERT INTO public.teams (country, id_group, code) SELECT 'England', id_group, 'ENG' FROM public.groups WHERE group_code='L';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Croatia', id_group, 'CRO' FROM public.groups WHERE group_code='L';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Inglaterra', id_group, 'ENG' FROM public.groups WHERE group_code='L';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Croacia', id_group, 'CRO' FROM public.groups WHERE group_code='L';
 INSERT INTO public.teams (country, id_group, code) SELECT 'Ghana', id_group, 'GHA' FROM public.groups WHERE group_code='L';
-INSERT INTO public.teams (country, id_group, code) SELECT 'Panama', id_group, 'PAN' FROM public.groups WHERE group_code='L';
+INSERT INTO public.teams (country, id_group, code) SELECT 'Panamá', id_group, 'PAN' FROM public.groups WHERE group_code='L';
 INSERT INTO public.teams (country, id_group, code) VALUES ('Segundo A', NULL, 'SFT') ON CONFLICT (country) DO NOTHING;
 INSERT INTO public.teams (country, id_group, code) VALUES ('Segundo B', NULL, 'TFT') ON CONFLICT (country) DO NOTHING;
 INSERT INTO public.teams (country, id_group, code) VALUES ('Primero E', NULL, 'JI1') ON CONFLICT (country) DO NOTHING;
@@ -715,555 +769,615 @@ INSERT INTO public.teams (country, id_group, code) VALUES ('Perdedor 100', NULL,
 INSERT INTO public.teams (country, id_group, code) VALUES ('Ganador 103', NULL, 'GTT') ON CONFLICT (country) DO NOTHING;
 INSERT INTO public.teams (country, id_group, code) VALUES ('Ganador 104', NULL, 'HTT') ON CONFLICT (country) DO NOTHING;
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 1,1,g.id_group,'2026-06-11'::date,'13:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 1,1,g.id_group,'2026-06-11'::date,'15:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='A' AND v.city='Mexico City' AND v.stadium='Estadio Azteca'
-  AND th.country='Mexico' AND ta.country='South Africa';
+  AND th.country='México' AND ta.country='Sudáfrica';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 2,1,g.id_group,'2026-06-11'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 2,1,g.id_group,'2026-06-11'::date,'22:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='A' AND v.city='Guadalajara' AND v.stadium='Estadio Akron'
-  AND th.country='South Korea' AND ta.country='Czech Republic';
+  AND th.country='Corea del Sur' AND ta.country='República Checa';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 3,1,g.id_group,'2026-06-12'::date,'15:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 3,1,g.id_group,'2026-06-12'::date,'17:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='B' AND v.city='Toronto' AND v.stadium='BMO Field'
-  AND th.country='Canada' AND ta.country='Bosnia and Herzegovina';
+  AND th.country='Canadá' AND ta.country='Bosnia y Herzegovina';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 4,1,g.id_group,'2026-06-12'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 4,1,g.id_group,'2026-06-12'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='D' AND v.city='Los Angeles' AND v.stadium='SoFi Stadium'
-  AND th.country='United States' AND ta.country='Paraguay';
+  AND th.country='Estados Unidos' AND ta.country='Paraguay';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 5,1,g.id_group,'2026-06-13'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 5,1,g.id_group,'2026-06-13'::date,'23:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='C' AND v.city='Boston' AND v.stadium='Gillette Stadium'
-  AND th.country='Haiti' AND ta.country='Scotland';
+  AND th.country='Haití' AND ta.country='Escocia';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 6,1,g.id_group,'2026-06-13'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 6,1,g.id_group,'2026-06-13'::date,'23:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='D' AND v.city='Vancouver' AND v.stadium='BC Place'
-  AND th.country='Australia' AND ta.country='Turkey';
+  AND th.country='Australia' AND ta.country='Turquía';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 7,1,g.id_group,'2026-06-13'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 7,1,g.id_group,'2026-06-13'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='C' AND v.city='New York/New Jersey' AND v.stadium='MetLife Stadium'
-  AND th.country='Brazil' AND ta.country='Morocco';
+  AND th.country='Brasil' AND ta.country='Marruecos';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 8,1,g.id_group,'2026-06-13'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 8,1,g.id_group,'2026-06-13'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='B' AND v.city='San Francisco Bay Area' AND v.stadium='Levi''s Stadium'
-  AND th.country='Qatar' AND ta.country='Switzerland';
+  AND th.country='Catar' AND ta.country='Suiza';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 9,1,g.id_group,'2026-06-14'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 9,1,g.id_group,'2026-06-14'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='E' AND v.city='Philadelphia' AND v.stadium='Lincoln Financial Field'
-  AND th.country='Ivory Coast' AND ta.country='Ecuador';
+  AND th.country='Costa de Marfil' AND ta.country='Ecuador';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 10,1,g.id_group,'2026-06-14'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 10,1,g.id_group,'2026-06-14'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='E' AND v.city='Houston' AND v.stadium='NRG Stadium'
-  AND th.country='Germany' AND ta.country='Curaçao';
+  AND th.country='Alemania' AND ta.country='Curazao';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 11,1,g.id_group,'2026-06-14'::date,'15:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 11,1,g.id_group,'2026-06-14'::date,'17:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='F' AND v.city='Dallas' AND v.stadium='AT&T Stadium'
-  AND th.country='Netherlands' AND ta.country='Japan';
+  AND th.country='Países Bajos' AND ta.country='Japón';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 12,1,g.id_group,'2026-06-14'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 12,1,g.id_group,'2026-06-14'::date,'22:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='F' AND v.city='Monterrey' AND v.stadium='Estadio BBVA'
-  AND th.country='Sweden' AND ta.country='Tunisia';
+  AND th.country='Suecia' AND ta.country='Túnez';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 13,1,g.id_group,'2026-06-15'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 13,1,g.id_group,'2026-06-15'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='H' AND v.city='Miami' AND v.stadium='Hard Rock Stadium'
-  AND th.country='Saudi Arabia' AND ta.country='Uruguay';
+  AND th.country='Arabia Saudita' AND ta.country='Uruguay';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 14,1,g.id_group,'2026-06-15'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 14,1,g.id_group,'2026-06-15'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='H' AND v.city='Atlanta' AND v.stadium='Mercedes-Benz Stadium'
-  AND th.country='Spain' AND ta.country='Cape Verde';
+  AND th.country='España' AND ta.country='Cabo Verde';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 15,1,g.id_group,'2026-06-15'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 15,1,g.id_group,'2026-06-15'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='G' AND v.city='Los Angeles' AND v.stadium='SoFi Stadium'
-  AND th.country='Iran' AND ta.country='New Zealand';
+  AND th.country='Irán' AND ta.country='Nueva Zelanda';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 16,1,g.id_group,'2026-06-15'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 16,1,g.id_group,'2026-06-15'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='G' AND v.city='Seattle' AND v.stadium='Lumen Field'
-  AND th.country='Belgium' AND ta.country='Egypt';
+  AND th.country='Bélgica' AND ta.country='Egipto';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 17,1,g.id_group,'2026-06-16'::date,'15:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 17,1,g.id_group,'2026-06-16'::date,'17:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='I' AND v.city='New York/New Jersey' AND v.stadium='MetLife Stadium'
-  AND th.country='France' AND ta.country='Senegal';
+  AND th.country='Francia' AND ta.country='Senegal';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 18,1,g.id_group,'2026-06-16'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 18,1,g.id_group,'2026-06-16'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='I' AND v.city='Boston' AND v.stadium='Gillette Stadium'
-  AND th.country='Iraq' AND ta.country='Norway';
+  AND th.country='Irak' AND ta.country='Noruega';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 19,1,g.id_group,'2026-06-16'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 19,1,g.id_group,'2026-06-16'::date,'22:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='J' AND v.city='Kansas City' AND v.stadium='Arrowhead Stadium'
-  AND th.country='Argentina' AND ta.country='Algeria';
+  AND th.country='Argentina' AND ta.country='Argelia';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 20,1,g.id_group,'2026-06-16'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 20,1,g.id_group,'2026-06-16'::date,'23:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='J' AND v.city='San Francisco Bay Area' AND v.stadium='Levi''s Stadium'
-  AND th.country='Austria' AND ta.country='Jordan';
+  AND th.country='Austria' AND ta.country='Jordania';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 21,1,g.id_group,'2026-06-17'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 21,1,g.id_group,'2026-06-17'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='L' AND v.city='Toronto' AND v.stadium='BMO Field'
-  AND th.country='Ghana' AND ta.country='Panama';
+  AND th.country='Ghana' AND ta.country='Panamá';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 22,1,g.id_group,'2026-06-17'::date,'15:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 22,1,g.id_group,'2026-06-17'::date,'17:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='L' AND v.city='Dallas' AND v.stadium='AT&T Stadium'
-  AND th.country='England' AND ta.country='Croatia';
+  AND th.country='Inglaterra' AND ta.country='Croacia';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 23,1,g.id_group,'2026-06-17'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 23,1,g.id_group,'2026-06-17'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='K' AND v.city='Houston' AND v.stadium='NRG Stadium'
-  AND th.country='Portugal' AND ta.country='DR Congo';
+  AND th.country='Portugal' AND ta.country='República Democrática del Congo';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 24,1,g.id_group,'2026-06-17'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 24,1,g.id_group,'2026-06-17'::date,'22:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='K' AND v.city='Mexico City' AND v.stadium='Estadio Azteca'
-  AND th.country='Uzbekistan' AND ta.country='Colombia';
+  AND th.country='Uzbekistán' AND ta.country='Colombia';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 25,1,g.id_group,'2026-06-18'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 25,1,g.id_group,'2026-06-18'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='A' AND v.city='Atlanta' AND v.stadium='Mercedes-Benz Stadium'
-  AND th.country='Czech Republic' AND ta.country='South Africa';
+  AND th.country='República Checa' AND ta.country='Sudáfrica';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 26,1,g.id_group,'2026-06-18'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 26,1,g.id_group,'2026-06-18'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='B' AND v.city='Los Angeles' AND v.stadium='SoFi Stadium'
-  AND th.country='Switzerland' AND ta.country='Bosnia and Herzegovina';
+  AND th.country='Suiza' AND ta.country='Bosnia y Herzegovina';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 27,1,g.id_group,'2026-06-18'::date,'15:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 27,1,g.id_group,'2026-06-18'::date,'17:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='B' AND v.city='Vancouver' AND v.stadium='BC Place'
-  AND th.country='Canada' AND ta.country='Qatar';
+  AND th.country='Canadá' AND ta.country='Catar';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 28,1,g.id_group,'2026-06-18'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 28,1,g.id_group,'2026-06-18'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='A' AND v.city='Guadalajara' AND v.stadium='Estadio Akron'
-  AND th.country='Mexico' AND ta.country='South Korea';
+  AND th.country='México' AND ta.country='Corea del Sur';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 29,1,g.id_group,'2026-06-19'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 29,1,g.id_group,'2026-06-19'::date,'23:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='C' AND v.city='Philadelphia' AND v.stadium='Lincoln Financial Field'
-  AND th.country='Brazil' AND ta.country='Haiti';
+  AND th.country='Brasil' AND ta.country='Haití';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 30,1,g.id_group,'2026-06-19'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 30,1,g.id_group,'2026-06-19'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='C' AND v.city='Boston' AND v.stadium='Gillette Stadium'
-  AND th.country='Scotland' AND ta.country='Morocco';
+  AND th.country='Escocia' AND ta.country='Marruecos';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 31,1,g.id_group,'2026-06-19'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 31,1,g.id_group,'2026-06-19'::date,'22:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='D' AND v.city='San Francisco Bay Area' AND v.stadium='Levi''s Stadium'
-  AND th.country='Turkey' AND ta.country='Paraguay';
+  AND th.country='Turquía' AND ta.country='Paraguay';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 32,1,g.id_group,'2026-06-19'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 32,1,g.id_group,'2026-06-19'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='D' AND v.city='Seattle' AND v.stadium='Lumen Field'
-  AND th.country='United States' AND ta.country='Australia';
+  AND th.country='Estados Unidos' AND ta.country='Australia';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 33,1,g.id_group,'2026-06-20'::date,'16:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 33,1,g.id_group,'2026-06-20'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='E' AND v.city='Toronto' AND v.stadium='BMO Field'
-  AND th.country='Germany' AND ta.country='Ivory Coast';
+  AND th.country='Alemania' AND ta.country='Costa de Marfil';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 34,1,g.id_group,'2026-06-20'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 34,1,g.id_group,'2026-06-20'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='E' AND v.city='Kansas City' AND v.stadium='Arrowhead Stadium'
-  AND th.country='Ecuador' AND ta.country='Curaçao';
+  AND th.country='Ecuador' AND ta.country='Curazao';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 35,1,g.id_group,'2026-06-20'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 35,1,g.id_group,'2026-06-20'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='F' AND v.city='Houston' AND v.stadium='NRG Stadium'
-  AND th.country='Netherlands' AND ta.country='Sweden';
+  AND th.country='Países Bajos' AND ta.country='Suecia';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 36,1,g.id_group,'2026-06-20'::date,'22:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 36,1,g.id_group,'2026-06-21'::date,'00:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='F' AND v.city='Monterrey' AND v.stadium='Estadio BBVA'
-  AND th.country='Tunisia' AND ta.country='Japan';
+  AND th.country='Túnez' AND ta.country='Japón';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 37,1,g.id_group,'2026-06-21'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 37,1,g.id_group,'2026-06-21'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='H' AND v.city='Miami' AND v.stadium='Hard Rock Stadium'
-  AND th.country='Uruguay' AND ta.country='Cape Verde';
+  AND th.country='Uruguay' AND ta.country='Cabo Verde';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 38,1,g.id_group,'2026-06-21'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 38,1,g.id_group,'2026-06-21'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='H' AND v.city='Atlanta' AND v.stadium='Mercedes-Benz Stadium'
-  AND th.country='Spain' AND ta.country='Saudi Arabia';
+  AND th.country='España' AND ta.country='Arabia Saudita';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 39,1,g.id_group,'2026-06-21'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 39,1,g.id_group,'2026-06-21'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='G' AND v.city='Los Angeles' AND v.stadium='SoFi Stadium'
-  AND th.country='Belgium' AND ta.country='Iran';
+  AND th.country='Bélgica' AND ta.country='Irán';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 40,1,g.id_group,'2026-06-21'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 40,1,g.id_group,'2026-06-21'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='G' AND v.city='Vancouver' AND v.stadium='BC Place'
-  AND th.country='New Zealand' AND ta.country='Egypt';
+  AND th.country='Nueva Zelanda' AND ta.country='Egipto';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 41,1,g.id_group,'2026-06-22'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 41,1,g.id_group,'2026-06-22'::date,'22:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='I' AND v.city='New York/New Jersey' AND v.stadium='MetLife Stadium'
-  AND th.country='Norway' AND ta.country='Senegal';
+  AND th.country='Noruega' AND ta.country='Senegal';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 42,1,g.id_group,'2026-06-22'::date,'17:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 42,1,g.id_group,'2026-06-22'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='I' AND v.city='Philadelphia' AND v.stadium='Lincoln Financial Field'
-  AND th.country='France' AND ta.country='Iraq';
+  AND th.country='Francia' AND ta.country='Irak';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 43,1,g.id_group,'2026-06-22'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 43,1,g.id_group,'2026-06-22'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='J' AND v.city='Dallas' AND v.stadium='AT&T Stadium'
   AND th.country='Argentina' AND ta.country='Austria';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 44,1,g.id_group,'2026-06-22'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 44,1,g.id_group,'2026-06-22'::date,'22:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='J' AND v.city='San Francisco Bay Area' AND v.stadium='Levi''s Stadium'
-  AND th.country='Jordan' AND ta.country='Algeria';
+  AND th.country='Jordania' AND ta.country='Argelia';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 45,1,g.id_group,'2026-06-23'::date,'16:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 45,1,g.id_group,'2026-06-23'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='L' AND v.city='Boston' AND v.stadium='Gillette Stadium'
-  AND th.country='England' AND ta.country='Ghana';
+  AND th.country='Inglaterra' AND ta.country='Ghana';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 46,1,g.id_group,'2026-06-23'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 46,1,g.id_group,'2026-06-23'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='L' AND v.city='Toronto' AND v.stadium='BMO Field'
-  AND th.country='Panama' AND ta.country='Croatia';
+  AND th.country='Panamá' AND ta.country='Croacia';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 47,1,g.id_group,'2026-06-23'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 47,1,g.id_group,'2026-06-23'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='K' AND v.city='Houston' AND v.stadium='NRG Stadium'
-  AND th.country='Portugal' AND ta.country='Uzbekistan';
+  AND th.country='Portugal' AND ta.country='Uzbekistán';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 48,1,g.id_group,'2026-06-23'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 48,1,g.id_group,'2026-06-23'::date,'22:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='K' AND v.city='Guadalajara' AND v.stadium='Estadio Akron'
-  AND th.country='Colombia' AND ta.country='DR Congo';
+  AND th.country='Colombia' AND ta.country='República Democrática del Congo';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 49,1,g.id_group,'2026-06-24'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 49,1,g.id_group,'2026-06-24'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='C' AND v.city='Miami' AND v.stadium='Hard Rock Stadium'
-  AND th.country='Scotland' AND ta.country='Brazil';
+  AND th.country='Escocia' AND ta.country='Brasil';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 50,1,g.id_group,'2026-06-24'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 50,1,g.id_group,'2026-06-24'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='C' AND v.city='Atlanta' AND v.stadium='Mercedes-Benz Stadium'
-  AND th.country='Morocco' AND ta.country='Haiti';
+  AND th.country='Marruecos' AND ta.country='Haití';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 51,1,g.id_group,'2026-06-24'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 51,1,g.id_group,'2026-06-24'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='B' AND v.city='Vancouver' AND v.stadium='BC Place'
-  AND th.country='Switzerland' AND ta.country='Canada';
+  AND th.country='Suiza' AND ta.country='Canadá';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 52,1,g.id_group,'2026-06-24'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 52,1,g.id_group,'2026-06-24'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='B' AND v.city='Seattle' AND v.stadium='Lumen Field'
-  AND th.country='Bosnia and Herzegovina' AND ta.country='Qatar';
+  AND th.country='Bosnia y Herzegovina' AND ta.country='Catar';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 53,1,g.id_group,'2026-06-24'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 53,1,g.id_group,'2026-06-24'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='A' AND v.city='Mexico City' AND v.stadium='Estadio Azteca'
-  AND th.country='Czech Republic' AND ta.country='Mexico';
+  AND th.country='República Checa' AND ta.country='México';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 54,1,g.id_group,'2026-06-24'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 54,1,g.id_group,'2026-06-24'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='A' AND v.city='Monterrey' AND v.stadium='Estadio BBVA'
-  AND th.country='South Africa' AND ta.country='South Korea';
+  AND th.country='Sudáfrica' AND ta.country='Corea del Sur';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 55,1,g.id_group,'2026-06-25'::date,'16:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 55,1,g.id_group,'2026-06-25'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='E' AND v.city='Philadelphia' AND v.stadium='Lincoln Financial Field'
-  AND th.country='Curaçao' AND ta.country='Ivory Coast';
+  AND th.country='Curazao' AND ta.country='Costa de Marfil';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 56,1,g.id_group,'2026-06-25'::date,'16:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 56,1,g.id_group,'2026-06-25'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='E' AND v.city='New York/New Jersey' AND v.stadium='MetLife Stadium'
-  AND th.country='Ecuador' AND ta.country='Germany';
+  AND th.country='Ecuador' AND ta.country='Alemania';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 57,1,g.id_group,'2026-06-25'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 57,1,g.id_group,'2026-06-25'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='F' AND v.city='Dallas' AND v.stadium='AT&T Stadium'
-  AND th.country='Japan' AND ta.country='Sweden';
+  AND th.country='Japón' AND ta.country='Suecia';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 58,1,g.id_group,'2026-06-25'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 58,1,g.id_group,'2026-06-25'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='F' AND v.city='Kansas City' AND v.stadium='Arrowhead Stadium'
-  AND th.country='Tunisia' AND ta.country='Netherlands';
+  AND th.country='Túnez' AND ta.country='Países Bajos';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 59,1,g.id_group,'2026-06-25'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 59,1,g.id_group,'2026-06-25'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='D' AND v.city='Los Angeles' AND v.stadium='SoFi Stadium'
-  AND th.country='Turkey' AND ta.country='United States';
+  AND th.country='Turquía' AND ta.country='Estados Unidos';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 60,1,g.id_group,'2026-06-25'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 60,1,g.id_group,'2026-06-25'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='D' AND v.city='San Francisco Bay Area' AND v.stadium='Levi''s Stadium'
   AND th.country='Paraguay' AND ta.country='Australia';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 61,1,g.id_group,'2026-06-26'::date,'15:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 61,1,g.id_group,'2026-06-26'::date,'17:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='I' AND v.city='Boston' AND v.stadium='Gillette Stadium'
-  AND th.country='Norway' AND ta.country='France';
+  AND th.country='Noruega' AND ta.country='Francia';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 62,1,g.id_group,'2026-06-26'::date,'15:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 62,1,g.id_group,'2026-06-26'::date,'17:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='I' AND v.city='Toronto' AND v.stadium='BMO Field'
-  AND th.country='Senegal' AND ta.country='Iraq';
+  AND th.country='Senegal' AND ta.country='Irak';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 63,1,g.id_group,'2026-06-26'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 63,1,g.id_group,'2026-06-26'::date,'22:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='G' AND v.city='Seattle' AND v.stadium='Lumen Field'
-  AND th.country='Egypt' AND ta.country='Iran';
+  AND th.country='Egipto' AND ta.country='Irán';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 64,1,g.id_group,'2026-06-26'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 64,1,g.id_group,'2026-06-26'::date,'22:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='G' AND v.city='Vancouver' AND v.stadium='BC Place'
-  AND th.country='New Zealand' AND ta.country='Belgium';
+  AND th.country='Nueva Zelanda' AND ta.country='Bélgica';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 65,1,g.id_group,'2026-06-26'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 65,1,g.id_group,'2026-06-26'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='H' AND v.city='Houston' AND v.stadium='NRG Stadium'
-  AND th.country='Cape Verde' AND ta.country='Saudi Arabia';
+  AND th.country='Cabo Verde' AND ta.country='Arabia Saudita';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 66,1,g.id_group,'2026-06-26'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 66,1,g.id_group,'2026-06-26'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='H' AND v.city='Guadalajara' AND v.stadium='Estadio Akron'
-  AND th.country='Uruguay' AND ta.country='Spain';
+  AND th.country='Uruguay' AND ta.country='España';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 67,1,g.id_group,'2026-06-27'::date,'17:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 67,1,g.id_group,'2026-06-27'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='L' AND v.city='New York/New Jersey' AND v.stadium='MetLife Stadium'
-  AND th.country='Panama' AND ta.country='England';
+  AND th.country='Panamá' AND ta.country='Inglaterra';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 68,1,g.id_group,'2026-06-27'::date,'17:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 68,1,g.id_group,'2026-06-27'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='L' AND v.city='Philadelphia' AND v.stadium='Lincoln Financial Field'
-  AND th.country='Croatia' AND ta.country='Ghana';
+  AND th.country='Croacia' AND ta.country='Ghana';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 69,1,g.id_group,'2026-06-27'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 69,1,g.id_group,'2026-06-27'::date,'23:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='J' AND v.city='Kansas City' AND v.stadium='Arrowhead Stadium'
-  AND th.country='Algeria' AND ta.country='Austria';
+  AND th.country='Argelia' AND ta.country='Austria';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 70,1,g.id_group,'2026-06-27'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 70,1,g.id_group,'2026-06-27'::date,'23:00'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='J' AND v.city='Dallas' AND v.stadium='AT&T Stadium'
-  AND th.country='Jordan' AND ta.country='Argentina';
+  AND th.country='Jordania' AND ta.country='Argentina';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 71,1,g.id_group,'2026-06-27'::date,'19:30'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 71,1,g.id_group,'2026-06-27'::date,'21:30'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='K' AND v.city='Miami' AND v.stadium='Hard Rock Stadium'
   AND th.country='Colombia' AND ta.country='Portugal';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 72,1,g.id_group,'2026-06-27'::date,'19:30'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
+SELECT 72,1,g.id_group,'2026-06-27'::date,'21:30'::time,v.id_venue,th.id_team,ta.id_team,NULL,NULL
 FROM public.groups g, public.venues v, public.teams th, public.teams ta
 WHERE g.group_code='K' AND v.city='Atlanta' AND v.stadium='Mercedes-Benz Stadium'
-  AND th.country='DR Congo' AND ta.country='Uzbekistan';
+  AND th.country='República Democrática del Congo' AND ta.country='Uzbekistán';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 73,2,NULL,'2026-06-28'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 73,2,NULL,'2026-06-28'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Los Angeles' AND v.stadium='SoFi Stadium'
   AND th.country='Segundo A' AND ta.country='Segundo B'
   AND hs.label='Segundo A' AND aslot.label='Segundo B';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 74,2,NULL,'2026-06-29'::date,'16:30'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 74,2,NULL,'2026-06-29'::date,'18:30'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Boston' AND v.stadium='Gillette Stadium'
   AND th.country='Primero E' AND ta.country='3rd ABCDEF'
   AND hs.label='Primero E' AND aslot.label='3rd ABCDEF';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 75,2,NULL,'2026-06-29'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 75,2,NULL,'2026-06-29'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Monterrey' AND v.stadium='Estadio BBVA'
   AND th.country='Primero F' AND ta.country='Segundo C'
   AND hs.label='Primero F' AND aslot.label='Segundo C';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 76,2,NULL,'2026-06-29'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 76,2,NULL,'2026-06-29'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Houston' AND v.stadium='NRG Stadium'
   AND th.country='Primero C' AND ta.country='Segundo F'
   AND hs.label='Primero C' AND aslot.label='Segundo F';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 77,2,NULL,'2026-06-30'::date,'17:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 77,2,NULL,'2026-06-30'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='New York/New Jersey' AND v.stadium='MetLife Stadium'
   AND th.country='Primero I' AND ta.country='3rd CDFGH'
   AND hs.label='Primero I' AND aslot.label='3rd CDFGH';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 78,2,NULL,'2026-06-30'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 78,2,NULL,'2026-06-30'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Dallas' AND v.stadium='AT&T Stadium'
   AND th.country='Segundo E' AND ta.country='Segundo I'
   AND hs.label='Segundo E' AND aslot.label='Segundo I';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 79,2,NULL,'2026-06-30'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 79,2,NULL,'2026-06-30'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Mexico City' AND v.stadium='Estadio Azteca'
   AND th.country='Primero A' AND ta.country='3rd CEFHI'
   AND hs.label='Primero A' AND aslot.label='3rd CEFHI';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 80,2,NULL,'2026-07-01'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 80,2,NULL,'2026-07-01'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Atlanta' AND v.stadium='Mercedes-Benz Stadium'
   AND th.country='Primero L' AND ta.country='3rd EHIJK'
   AND hs.label='Primero L' AND aslot.label='3rd EHIJK';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 81,2,NULL,'2026-07-01'::date,'17:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 81,2,NULL,'2026-07-01'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='San Francisco Bay Area' AND v.stadium='Levi''s Stadium'
   AND th.country='Primero D' AND ta.country='3rd BEFIJ'
   AND hs.label='Primero D' AND aslot.label='3rd BEFIJ';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 82,2,NULL,'2026-07-01'::date,'13:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 82,2,NULL,'2026-07-01'::date,'15:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Seattle' AND v.stadium='Lumen Field'
   AND th.country='Primero G' AND ta.country='3rd AEHIJ'
   AND hs.label='Primero G' AND aslot.label='3rd AEHIJ';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 83,2,NULL,'2026-07-02'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 83,2,NULL,'2026-07-02'::date,'21:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Toronto' AND v.stadium='BMO Field'
   AND th.country='Segundo K' AND ta.country='Segundo L'
   AND hs.label='Segundo K' AND aslot.label='Segundo L';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 84,2,NULL,'2026-07-02'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 84,2,NULL,'2026-07-02'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Los Angeles' AND v.stadium='SoFi Stadium'
   AND th.country='Primero H' AND ta.country='Segundo J'
   AND hs.label='Primero H' AND aslot.label='Segundo J';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 85,2,NULL,'2026-07-02'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 85,2,NULL,'2026-07-02'::date,'22:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Vancouver' AND v.stadium='BC Place'
   AND th.country='Primero B' AND ta.country='3rd EFGIJ'
   AND hs.label='Primero B' AND aslot.label='3rd EFGIJ';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 86,2,NULL,'2026-07-03'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 86,2,NULL,'2026-07-03'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Miami' AND v.stadium='Hard Rock Stadium'
   AND th.country='Primero J' AND ta.country='Segundo H'
   AND hs.label='Primero J' AND aslot.label='Segundo H';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 87,2,NULL,'2026-07-03'::date,'20:30'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 87,2,NULL,'2026-07-03'::date,'22:30'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Kansas City' AND v.stadium='Arrowhead Stadium'
   AND th.country='Primero K' AND ta.country='3rd DEIJL'
   AND hs.label='Primero K' AND aslot.label='3rd DEIJL';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 88,2,NULL,'2026-07-03'::date,'13:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 88,2,NULL,'2026-07-03'::date,'15:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Dallas' AND v.stadium='AT&T Stadium'
   AND th.country='Segundo D' AND ta.country='Segundo G'
   AND hs.label='Segundo D' AND aslot.label='Segundo G';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 89,3,NULL,'2026-07-04'::date,'17:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 89,3,NULL,'2026-07-04'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Philadelphia' AND v.stadium='Lincoln Financial Field'
   AND th.country='Ganador 74' AND ta.country='Ganador 77'
   AND hs.label='Ganador 74' AND aslot.label='Ganador 77';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 90,3,NULL,'2026-07-04'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 90,3,NULL,'2026-07-04'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Houston' AND v.stadium='NRG Stadium'
   AND th.country='Ganador 73' AND ta.country='Ganador 75'
   AND hs.label='Ganador 73' AND aslot.label='Ganador 75';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 91,3,NULL,'2026-07-05'::date,'16:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 91,3,NULL,'2026-07-05'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='New York/New Jersey' AND v.stadium='MetLife Stadium'
   AND th.country='Ganador 76' AND ta.country='Ganador 78'
   AND hs.label='Ganador 76' AND aslot.label='Ganador 78';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 92,3,NULL,'2026-07-05'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 92,3,NULL,'2026-07-05'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Mexico City' AND v.stadium='Estadio Azteca'
   AND th.country='Ganador 79' AND ta.country='Ganador 80'
   AND hs.label='Ganador 79' AND aslot.label='Ganador 80';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 93,3,NULL,'2026-07-06'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 93,3,NULL,'2026-07-06'::date,'16:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Dallas' AND v.stadium='AT&T Stadium'
   AND th.country='Ganador 83' AND ta.country='Ganador 84'
   AND hs.label='Ganador 83' AND aslot.label='Ganador 84';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 94,3,NULL,'2026-07-06'::date,'17:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 94,3,NULL,'2026-07-06'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Seattle' AND v.stadium='Lumen Field'
   AND th.country='Ganador 81' AND ta.country='Ganador 82'
   AND hs.label='Ganador 81' AND aslot.label='Ganador 82';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 95,3,NULL,'2026-07-07'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 95,3,NULL,'2026-07-07'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Atlanta' AND v.stadium='Mercedes-Benz Stadium'
   AND th.country='Ganador 86' AND ta.country='Ganador 88'
   AND hs.label='Ganador 86' AND aslot.label='Ganador 88';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 96,3,NULL,'2026-07-07'::date,'13:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 96,3,NULL,'2026-07-07'::date,'15:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Vancouver' AND v.stadium='BC Place'
   AND th.country='Ganador 85' AND ta.country='Ganador 87'
   AND hs.label='Ganador 85' AND aslot.label='Ganador 87';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 97,4,NULL,'2026-07-09'::date,'16:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 97,4,NULL,'2026-07-09'::date,'18:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Boston' AND v.stadium='Gillette Stadium'
   AND th.country='Ganador 89' AND ta.country='Ganador 90'
   AND hs.label='Ganador 89' AND aslot.label='Ganador 90';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 98,4,NULL,'2026-07-10'::date,'12:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 98,4,NULL,'2026-07-10'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Los Angeles' AND v.stadium='SoFi Stadium'
   AND th.country='Ganador 93' AND ta.country='Ganador 94'
   AND hs.label='Ganador 93' AND aslot.label='Ganador 94';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 99,4,NULL,'2026-07-11'::date,'17:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 99,4,NULL,'2026-07-11'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Miami' AND v.stadium='Hard Rock Stadium'
   AND th.country='Ganador 91' AND ta.country='Ganador 92'
   AND hs.label='Ganador 91' AND aslot.label='Ganador 92';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 100,4,NULL,'2026-07-11'::date,'20:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 100,4,NULL,'2026-07-11'::date,'22:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Kansas City' AND v.stadium='Arrowhead Stadium'
   AND th.country='Ganador 95' AND ta.country='Ganador 96'
   AND hs.label='Ganador 95' AND aslot.label='Ganador 96';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 101,5,NULL,'2026-07-14'::date,'14:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 101,5,NULL,'2026-07-14'::date,'16:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Dallas' AND v.stadium='AT&T Stadium'
   AND th.country='Ganador 97' AND ta.country='Ganador 98'
   AND hs.label='Ganador 97' AND aslot.label='Ganador 98';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 102,5,NULL,'2026-07-15'::date,'15:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 102,5,NULL,'2026-07-15'::date,'17:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Atlanta' AND v.stadium='Mercedes-Benz Stadium'
   AND th.country='Ganador 99' AND ta.country='Ganador 100'
   AND hs.label='Ganador 99' AND aslot.label='Ganador 100';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 103,6,NULL,'2026-07-18'::date,'17:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 103,6,NULL,'2026-07-18'::date,'19:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='Miami' AND v.stadium='Hard Rock Stadium'
   AND th.country='Perdedor 101' AND ta.country='Perdedor 102'
   AND hs.label='Perdedor 101' AND aslot.label='Perdedor 102';
 INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
-SELECT 104,7,NULL,'2026-07-19'::date,'15:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
+SELECT 104,7,NULL,'2026-07-19'::date,'17:00'::time,v.id_venue,th.id_team,ta.id_team,hs.id_slot,aslot.id_slot
 FROM public.venues v, public.teams th, public.teams ta, public.knockout_slots hs, public.knockout_slots aslot
 WHERE v.city='New York/New Jersey' AND v.stadium='MetLife Stadium'
   AND th.country='Ganador 101' AND ta.country='Ganador 102'
   AND hs.label='Ganador 101' AND aslot.label='Ganador 102';
 COMMIT;
+
+-- ===== migrations/20260603000007_teams_spanish_names.sql =====
+-- Display names for the 48 World Cup 2026 group teams (teams.country).
+-- FIFA codes (teams.code) and group assignments unchanged.
+UPDATE public.teams AS t
+SET country = v.country
+FROM (
+  VALUES
+    ('MEX', 'México'),
+    ('RSA', 'Sudáfrica'),
+    ('KOR', 'Corea del Sur'),
+    ('CZE', 'República Checa'),
+    ('CAN', 'Canadá'),
+    ('BIH', 'Bosnia y Herzegovina'),
+    ('QAT', 'Catar'),
+    ('SUI', 'Suiza'),
+    ('BRA', 'Brasil'),
+    ('MAR', 'Marruecos'),
+    ('HAI', 'Haití'),
+    ('SCO', 'Escocia'),
+    ('USA', 'Estados Unidos'),
+    ('PAR', 'Paraguay'),
+    ('AUS', 'Australia'),
+    ('TUR', 'Turquía'),
+    ('GER', 'Alemania'),
+    ('CUW', 'Curazao'),
+    ('CIV', 'Costa de Marfil'),
+    ('ECU', 'Ecuador'),
+    ('NED', 'Países Bajos'),
+    ('JPN', 'Japón'),
+    ('SWE', 'Suecia'),
+    ('TUN', 'Túnez'),
+    ('BEL', 'Bélgica'),
+    ('EGY', 'Egipto'),
+    ('IRN', 'Irán'),
+    ('NZL', 'Nueva Zelanda'),
+    ('ESP', 'España'),
+    ('CPV', 'Cabo Verde'),
+    ('KSA', 'Arabia Saudita'),
+    ('URY', 'Uruguay'),
+    ('FRA', 'Francia'),
+    ('SEN', 'Senegal'),
+    ('IRQ', 'Irak'),
+    ('NOR', 'Noruega'),
+    ('ARG', 'Argentina'),
+    ('ALG', 'Argelia'),
+    ('AUT', 'Austria'),
+    ('JOR', 'Jordania'),
+    ('POR', 'Portugal'),
+    ('COD', 'República Democrática del Congo'),
+    ('UZB', 'Uzbekistán'),
+    ('COL', 'Colombia'),
+    ('ENG', 'Inglaterra'),
+    ('CRO', 'Croacia'),
+    ('GHA', 'Ghana'),
+    ('PAN', 'Panamá')
+) AS v (code, country)
+WHERE t.code = v.code::char(3)
+  AND t.id_group IS NOT NULL;
+

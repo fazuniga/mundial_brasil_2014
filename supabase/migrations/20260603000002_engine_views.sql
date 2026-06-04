@@ -1,5 +1,25 @@
 -- Tournament engine views (2026 format). security_invoker so RLS applies.
 
+CREATE OR REPLACE FUNCTION public.minute_to_first_goal_range(minute int)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE
+AS $$
+  SELECT CASE
+    WHEN minute IS NULL THEN NULL
+    WHEN minute BETWEEN 451 AND 459 THEN '45+_1T'
+    WHEN minute BETWEEN 901 AND 909 THEN '90+_2T'
+    WHEN minute <= 15 THEN '0-15'
+    WHEN minute <= 30 THEN '16-30'
+    WHEN minute <= 45 THEN '31-45'
+    WHEN minute <= 60 THEN '46-60'
+    WHEN minute <= 75 THEN '61-75'
+    WHEN minute <= 90 THEN '76-90'
+    WHEN minute > 90 THEN '90+_2T'
+    ELSE NULL
+  END;
+$$;
+
 -- Core match results with winner logic (from vw_results)
 CREATE OR REPLACE VIEW public.v_results
 WITH (security_invoker = true) AS
@@ -48,7 +68,8 @@ SELECT
             WHEN COALESCE(mr.pens_home, 0) < COALESCE(mr.pens_away, 0) THEN ta.country
           END
       END
-  END AS winner_country
+  END AS winner_country,
+  public.minute_to_first_goal_range(mr.first_goal_minute) AS first_goal_minute_range
 FROM public.matches m
 JOIN public.rounds r ON r.id_round = m.id_round
 JOIN public.teams th ON th.id_team = m.home_team_id
@@ -218,6 +239,31 @@ JOIN public.knockout_slots ks_away ON ks_away.id_slot = m.away_slot_id
 JOIN public.v_group_qualifiers gq_away ON gq_away.slot_label = ks_away.label
 WHERE f.id_round = 2;
 
+CREATE OR REPLACE VIEW public.v_prediction_side_bets
+WITH (security_invoker = true) AS
+SELECT
+  p.id_pool,
+  p.id_match,
+  vr.first_goal_minute_range AS actual_first_goal_range,
+  p.first_goal_minute AS predicted_first_goal_range,
+  (
+    p.first_goal_minute IS NOT NULL
+    AND vr.first_goal_minute_range IS NOT NULL
+    AND p.first_goal_minute = vr.first_goal_minute_range
+  ) AS first_goal_minute_hit,
+  (
+    p.extra_time IS NOT NULL
+    AND vr.goals_home IS NOT NULL
+    AND p.extra_time = (
+      COALESCE(vr.goals_home_et, 0) <> COALESCE(vr.goals_home, 0)
+      OR COALESCE(vr.goals_away_et, 0) <> COALESCE(vr.goals_away, 0)
+      OR COALESCE(vr.pens_home, 0) > 0
+      OR COALESCE(vr.pens_away, 0) > 0
+    )
+  ) AS extra_time_hit
+FROM public.predictions p
+JOIN public.v_results vr ON vr.id_match = p.id_match;
+
 GRANT SELECT ON public.v_results TO anon, authenticated;
 GRANT SELECT ON public.v_group_standings TO anon, authenticated;
 GRANT SELECT ON public.v_qualified_top_two TO anon, authenticated;
@@ -225,3 +271,4 @@ GRANT SELECT ON public.v_best_third_places TO anon, authenticated;
 GRANT SELECT ON public.v_group_qualifiers TO anon, authenticated;
 GRANT SELECT ON public.v_fixture TO anon, authenticated;
 GRANT SELECT ON public.v_round_of_32_teams TO anon, authenticated;
+GRANT SELECT ON public.v_prediction_side_bets TO anon, authenticated;
