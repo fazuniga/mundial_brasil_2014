@@ -56,7 +56,7 @@ export default async function HomePage() {
   return (
     <>
       <SiteHeader userEmail={user?.email} isAdmin={isAdmin} activeNav="home" />
-      <main className="mx-auto flex w-full max-w-7xl flex-col gap-section-gap px-gutter-md pb-24 pt-[calc(4rem+2rem)] md:pb-0">
+      <main className="mx-auto flex w-full max-w-7xl flex-col gap-section-gap px-gutter-md pb-24 pt-[calc(4rem+2rem)] md:pb-8">
         <HomeHero isAuthenticated={!!user} />
         <TournamentRoadmap rounds={rounds ?? []} />
 

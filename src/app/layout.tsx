@@ -25,7 +25,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Polla Mundial 2026",
-  description: "Prode del Mundial USA, México y Canadá 2026",
+  description: "Mundial USA, México y Canadá 2026",
 };
 
 export default function RootLayout({

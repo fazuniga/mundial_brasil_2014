@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 type SiteHeaderProps = {
   userEmail?: string | null;
   isAdmin?: boolean;
-  activeNav?: "home" | "matches" | "profile";
+  activeNav?: "home" | "matches" | "clasificacion" | "profile";
 };
 
 const navLinkClass =
@@ -21,7 +21,7 @@ export function SiteHeader({
       <div className="mx-auto flex h-header-height w-full max-w-7xl items-center justify-between px-gutter-md">
         <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
           <MaterialIcon name="sports_soccer" className="text-3xl text-primary" />
-          <h1 className="font-headline text-xl font-bold text-primary md:text-3xl">
+          <h1 className="font-headline text-lg font-bold text-primary md:text-xl">
             Polla Mundial 2026
           </h1>
         </Link>
@@ -50,6 +50,22 @@ export function SiteHeader({
           >
             <MaterialIcon name="event_note" filled={activeNav === "matches"} className="text-xl" />
             Partidos
+          </Link>
+          <Link
+            href="/clasificacion"
+            className={cn(
+              navLinkClass,
+              activeNav === "clasificacion"
+                ? "bg-surface-container-high font-bold text-primary"
+                : "text-on-surface-variant hover:bg-surface-container-high",
+            )}
+          >
+            <MaterialIcon
+              name="leaderboard"
+              filled={activeNav === "clasificacion"}
+              className="text-xl"
+            />
+            Clasificación
           </Link>
           <Link
             href="/profile"

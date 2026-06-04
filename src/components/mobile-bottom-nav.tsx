@@ -3,7 +3,7 @@ import { MaterialIcon } from "@/components/material-icon";
 import { cn } from "@/lib/utils";
 
 type MobileBottomNavProps = {
-  active?: "home" | "matches" | "profile" | "admin";
+  active?: "home" | "matches" | "clasificacion" | "profile" | "admin";
   isAdmin?: boolean;
 };
 
@@ -66,6 +66,29 @@ export function MobileBottomNav({
           )}
         >
           Partidos
+        </span>
+      </Link>
+
+      <Link
+        href="/clasificacion"
+        className={cn(
+          itemClass,
+          compact ? "p-1" : "p-2",
+          active === "clasificacion" ? "text-primary" : "text-on-surface-variant",
+        )}
+      >
+        <MaterialIcon
+          name="leaderboard"
+          filled={active === "clasificacion"}
+          className={cn("mb-0.5", compact ? "text-xl" : "mb-1 text-2xl")}
+        />
+        <span
+          className={cn(
+            compact ? "text-[10px] leading-tight" : "text-xs",
+            active === "clasificacion" ? "font-bold" : "font-medium",
+          )}
+        >
+          Clasificación
         </span>
       </Link>
 
