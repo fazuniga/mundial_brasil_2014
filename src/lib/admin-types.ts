@@ -56,6 +56,15 @@ export type TournamentResultsRow = {
   winner_team_id: number | null;
 };
 
+export type AdminPoolRow = {
+  id_pool: number;
+  description: string;
+  is_paid: boolean;
+  owner_id: string;
+  display_name: string | null;
+  username: string | null;
+};
+
 export type AdminClientProps = {
   fixtures: AdminFixtureRow[];
   resultsByMatch: Record<number, MatchResultRow>;

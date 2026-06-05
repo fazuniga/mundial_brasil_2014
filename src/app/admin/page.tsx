@@ -3,9 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SiteHeader } from "@/components/site-header";
 import { AdminClient } from "@/components/admin/admin-client";
+import { AdminPoolsSection } from "@/components/admin/admin-pools-section";
 import { AdminRoundPhases } from "@/components/admin/admin-round-phases";
 import type { FixtureRow, PlayerRow, TeamRow } from "@/lib/predictions-types";
-import type { MatchGoalRow, MatchResultRow, MatchTeamRow } from "@/lib/admin-types";
+import type { AdminPoolRow, MatchGoalRow, MatchResultRow, MatchTeamRow } from "@/lib/admin-types";
 import { mergeFixturesWithTeams } from "@/lib/admin-utils";
 
 export default async function AdminPage() {
@@ -38,6 +39,7 @@ export default async function AdminPage() {
     { data: topScorerSummary },
     { data: groupTeamsRaw },
     { data: tournamentResultsRaw },
+    { data: poolsRaw },
   ] = await Promise.all([
     supabase
       .from("v_fixture")
@@ -71,7 +73,30 @@ export default async function AdminPage() {
       .not("id_group", "is", null)
       .order("country"),
     supabase.from("tournament_results").select("winner_team_id").eq("id", 1).maybeSingle(),
+    supabase
+      .from("pools")
+      .select("id_pool, description, is_paid, owner_id, profiles(first_name, last_name, username)")
+      .order("id_pool"),
   ]);
+
+  const adminPools: AdminPoolRow[] = (poolsRaw ?? []).map((row) => {
+    const nested = row.profiles as
+      | { first_name: string; last_name: string; username: string | null }
+      | { first_name: string; last_name: string; username: string | null }[]
+      | null;
+    const profile = Array.isArray(nested) ? nested[0] : nested;
+    const displayName = profile
+      ? `${profile.first_name} ${profile.last_name}`.trim()
+      : null;
+    return {
+      id_pool: row.id_pool,
+      description: row.description,
+      is_paid: row.is_paid,
+      owner_id: row.owner_id,
+      display_name: displayName || null,
+      username: profile?.username ?? null,
+    };
+  });
 
   const fixtures = mergeFixturesWithTeams(
     (fixturesRaw ?? []) as FixtureRow[],
@@ -131,6 +156,8 @@ export default async function AdminPage() {
         </header>
 
         <AdminRoundPhases rounds={roundsRaw ?? []} />
+
+        <AdminPoolsSection pools={adminPools} />
 
         <AdminClient
           fixtures={fixtures}

@@ -3,6 +3,7 @@ export type PoolRankingRow = {
   owner_id: string;
   display_name: string;
   username: string | null;
+  is_paid: boolean;
   match_points: number;
   exact_hits: number;
   goal_diff_hits: number;

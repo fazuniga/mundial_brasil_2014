@@ -26,7 +26,7 @@ export default async function ClasificacionPage() {
   const { data: rankingsRaw, error } = await supabase
     .from("v_pool_rankings")
     .select(
-      "id_pool, owner_id, display_name, username, match_points, exact_hits, goal_diff_hits, winner_hits, side_bet_points, tournament_points, total_points, rank_position",
+      "id_pool, owner_id, display_name, username, is_paid, match_points, exact_hits, goal_diff_hits, winner_hits, side_bet_points, tournament_points, total_points, rank_position",
     )
     .order("rank_position");
 

@@ -165,10 +165,32 @@ CREATE POLICY "Profiles select own" ON public.profiles FOR SELECT TO authenticat
 CREATE POLICY "Profiles insert own" ON public.profiles FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
 CREATE POLICY "Profiles update own" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 
+CREATE OR REPLACE FUNCTION public.is_current_user_admin()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE(
+    (SELECT p.is_admin FROM public.profiles p WHERE p.id = auth.uid()),
+    false
+  );
+$$;
+
+REVOKE ALL ON FUNCTION public.is_current_user_admin() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_current_user_admin() TO authenticated;
+
+CREATE POLICY "Admins select all profiles" ON public.profiles FOR SELECT TO authenticated
+  USING (public.is_current_user_admin());
+
 -- Pools
 CREATE POLICY "Pools select all authenticated" ON public.pools FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Pools insert own" ON public.pools FOR INSERT TO authenticated WITH CHECK (owner_id = auth.uid());
 CREATE POLICY "Pools update own" ON public.pools FOR UPDATE TO authenticated USING (owner_id = auth.uid()) WITH CHECK (owner_id = auth.uid());
+CREATE POLICY "Admins update pools" ON public.pools FOR UPDATE TO authenticated
+  USING (public.is_current_user_admin())
+  WITH CHECK (public.is_current_user_admin());
 
 -- Predictions: only pool owner
 CREATE POLICY "Predictions select own pool" ON public.predictions FOR SELECT TO authenticated
@@ -1499,9 +1521,12 @@ owner_points AS (
   GROUP BY pl.owner_id
 ),
 primary_pool AS (
-  SELECT owner_id, MIN(id_pool) AS id_pool
+  SELECT DISTINCT ON (owner_id)
+    owner_id,
+    id_pool,
+    is_paid
   FROM public.pools
-  GROUP BY owner_id
+  ORDER BY owner_id, id_pool ASC
 ),
 totals AS (
   SELECT
@@ -1509,6 +1534,7 @@ totals AS (
     pr.id AS owner_id,
     TRIM(BOTH FROM pr.first_name || ' ' || pr.last_name) AS display_name,
     pr.username,
+    COALESCE(pp.is_paid, false) AS is_paid,
     COALESCE(op.match_points, 0) AS match_points,
     COALESCE(op.exact_hits, 0) AS exact_hits,
     COALESCE(op.goal_diff_hits, 0) AS goal_diff_hits,
@@ -1517,8 +1543,8 @@ totals AS (
     COALESCE(op.tournament_points, 0) AS tournament_points,
     (COALESCE(op.match_points, 0) + COALESCE(op.tournament_points, 0))::int AS total_points,
     pr.created_at
-  FROM public.profiles pr
-  LEFT JOIN primary_pool pp ON pp.owner_id = pr.id
+  FROM primary_pool pp
+  INNER JOIN public.profiles pr ON pr.id = pp.owner_id
   LEFT JOIN owner_points op ON op.owner_id = pr.id
 )
 SELECT
@@ -1526,6 +1552,7 @@ SELECT
   owner_id,
   display_name,
   username,
+  is_paid,
   match_points,
   exact_hits,
   goal_diff_hits,
@@ -1539,5 +1566,5 @@ SELECT
 FROM totals;
 
 COMMENT ON VIEW public.v_pool_rankings IS
-  'Polla leaderboard: one row per registered profile (0 points without a pool). Sums all pools per owner.';
+  'Polla leaderboard: one row per owner with at least one pool. Sums all pools per owner; is_paid from primary pool.';
 

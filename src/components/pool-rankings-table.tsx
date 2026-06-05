@@ -20,7 +20,7 @@ export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProp
       <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-outline-variant/60 bg-surface-container-low px-6 py-12 text-center">
         <MaterialIcon name="leaderboard" className="text-4xl text-on-surface-variant/70" />
         <p className="font-geist text-sm text-on-surface-variant">
-          Aún no hay participantes registrados en la polla.
+          Aún no hay participantes con pronósticos.
         </p>
       </div>
     );
@@ -41,7 +41,10 @@ export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProp
         <thead>
           <tr className="border-b border-outline-variant/50 bg-surface-container-lowest text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
             <th className="px-4 py-3 text-center">#</th>
-            <th className="px-4 py-3">Jugador</th>
+            <th className="px-4 py-3">
+              <span className="sr-only">Estado de pago</span>
+              Jugador
+            </th>
             <th className="px-4 py-3 text-right">Puntos</th>
             {showBreakdown ? (
               <>
@@ -93,10 +96,34 @@ export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProp
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <p className="font-medium text-on-surface">{row.display_name || row.username}</p>
-                  {row.username ? (
-                    <p className="font-mono text-xs text-on-surface-variant">@{row.username}</p>
-                  ) : null}
+                  <div className="flex items-center gap-2">
+                    {row.id_pool != null ? (
+                      <span
+                        title={row.is_paid ? "Pagado" : "Pendiente de pago"}
+                        aria-label={row.is_paid ? "Pagado" : "Pendiente de pago"}
+                        className="inline-flex shrink-0"
+                      >
+                        <MaterialIcon
+                          name={row.is_paid ? "paid" : "money_off"}
+                          className={
+                            row.is_paid
+                              ? "text-base text-primary"
+                              : "text-base text-accent"
+                          }
+                        />
+                      </span>
+                    ) : null}
+                    <div className="min-w-0">
+                      <p className="font-medium text-on-surface">
+                        {row.display_name || row.username}
+                      </p>
+                      {row.username ? (
+                        <p className="font-mono text-xs text-on-surface-variant">
+                          @{row.username}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-right">
                   <span className="font-headline text-lg font-bold tabular-nums text-primary">
