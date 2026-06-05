@@ -49,8 +49,16 @@ export type PlayerRow = {
   group_code: string | null;
 };
 
+export type TeamRow = {
+  id_team: number;
+  country: string;
+  code: string;
+  group_code: string | null;
+};
+
 export type TournamentPredictionRow = {
   id_pool: number;
+  winner_team_id: number | null;
   top_scorer_player_id: number | null;
   top_scorer_goals: number | null;
 };

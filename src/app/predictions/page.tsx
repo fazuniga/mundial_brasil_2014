@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SiteHeader } from "@/components/site-header";
 import { PredictionsClient } from "@/components/predictions/predictions-client";
-import type { FixtureRow, PlayerRow, PredictionRow } from "@/lib/predictions-types";
+import type { FixtureRow, PlayerRow, PredictionRow, TeamRow } from "@/lib/predictions-types";
 import type { MatchResultDetail, SideBetOutcome } from "@/lib/prediction-scoring";
 
 function sortFixtures(fixtures: FixtureRow[]): FixtureRow[] {
@@ -28,6 +28,7 @@ export default async function PredictionsPage() {
     { data: fixturesRaw },
     { data: scoringRules },
     { data: playersRaw },
+    { data: teamsRaw },
     { data: tournamentBetOpenRaw },
     { data: resultsRaw },
   ] = await Promise.all([
@@ -46,6 +47,11 @@ export default async function PredictionsPage() {
       )
       .order("team_country")
       .order("name"),
+    supabase
+      .from("teams")
+      .select("id_team, country, code, groups(group_code)")
+      .not("id_group", "is", null)
+      .order("country"),
     supabase.from("v_tournament_bet_open").select("tournament_bet_open").single(),
     supabase
       .from("v_results")
@@ -56,6 +62,16 @@ export default async function PredictionsPage() {
 
   const fixtures = sortFixtures((fixturesRaw ?? []) as FixtureRow[]);
   const players = (playersRaw ?? []) as PlayerRow[];
+  const teams: TeamRow[] = (teamsRaw ?? []).map((row) => {
+    const nested = row.groups as { group_code: string } | { group_code: string }[] | null;
+    const groupCode = Array.isArray(nested) ? nested[0]?.group_code : nested?.group_code;
+    return {
+      id_team: row.id_team,
+      country: row.country,
+      code: row.code,
+      group_code: groupCode ?? null,
+    };
+  });
   const tournamentBetOpen = tournamentBetOpenRaw?.tournament_bet_open ?? true;
 
   const resultsByMatch: Record<number, MatchResultDetail> = {};
@@ -97,7 +113,7 @@ export default async function PredictionsPage() {
             .eq("id_pool", poolId),
           supabase
             .from("tournament_predictions")
-            .select("id_pool, top_scorer_player_id, top_scorer_goals")
+            .select("id_pool, winner_team_id, top_scorer_player_id, top_scorer_goals")
             .eq("id_pool", poolId)
             .maybeSingle(),
           supabase
@@ -134,12 +150,19 @@ export default async function PredictionsPage() {
             Apuestas
           </p>
           <h1 className="font-headline text-2xl font-bold text-primary md:text-3xl">
-            Pronosticar marcador
+            Ingresa tus pronósticos
           </h1>
           <p className="font-geist max-w-2xl text-sm text-on-surface-variant">
-            Ingresa tu marcador y apuestas adicionales en cada partido. El goleador
-            del torneo se pronostica una sola vez. El plazo de apuestas por partido
-            cierra 60 min antes del inicio del partido.
+            Ingresa tus marcadores y apuestas adicionales en cada partido, y acumula puntos.
+            ¿Cuándo es el primer gol? Cuéntanos qué crees tú.
+          </p>
+          <p className="font-geist max-w-2xl text-sm text-on-surface-variant">
+            En Apuestas Especiales pronosticas al princpio del mundial qué país será
+            el campeón (por 15 puntos), el goleador del torneo (por 10 puntos) y
+            sus goles (por 15 puntos).
+          </p>
+          <p className="font-geist max-w-2xl text-sm text-on-surface-variant">
+            Sólo las fases habilitadas aceptan pronósticos, y sólo tienes hasta 60 minutos antes del inicio de cada partido para hacerlo.
           </p>
         </header>
 
@@ -155,6 +178,7 @@ export default async function PredictionsPage() {
             resultsByMatch={resultsByMatch}
             sideBetsByMatch={sideBetsByMatch}
             players={players}
+            teams={teams}
             tournamentPrediction={tournamentPrediction}
             tournamentBetOpen={tournamentBetOpen}
             poolId={poolId}

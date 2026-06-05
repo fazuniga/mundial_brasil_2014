@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Alert } from "@/components/ui/alert";
 import { AdminMatchSection } from "@/components/admin/admin-match-section";
 import { AdminTournamentScorer } from "@/components/admin/admin-tournament-scorer";
+import { AdminTournamentWinner } from "@/components/admin/admin-tournament-winner";
 import type {
   AdminClientProps,
   AdminFixtureRow,
@@ -50,7 +51,9 @@ export function AdminClient({
   resultsByMatch,
   goalsByMatch: initialGoalsByMatch,
   players,
+  teams,
   topScorerSummary,
+  tournamentResults,
 }: AdminClientProps) {
   const router = useRouter();
   const matchIds = useMemo(() => fixtures.map((f) => f.id_match), [fixtures]);
@@ -192,6 +195,14 @@ export function AdminClient({
           <p className="font-geist text-base">{success}</p>
         </Alert>
       ) : null}
+
+      <AdminTournamentWinner
+        teams={teams}
+        winnerTeamId={tournamentResults?.winner_team_id ?? null}
+        winnerCountry={
+          teams.find((t) => t.id_team === tournamentResults?.winner_team_id)?.country ?? null
+        }
+      />
 
       <AdminTournamentScorer summary={topScorerSummary} />
 

@@ -8,7 +8,7 @@ import { MaterialIcon } from "@/components/material-icon";
 import { GroupPredictionsTable } from "@/components/predictions/group-predictions-table";
 import { PredictionsSearchBar } from "@/components/predictions/predictions-search-bar";
 import { ScoringRulesCard } from "@/components/predictions/scoring-rules-card";
-import { TopScorerBet } from "@/components/predictions/top-scorer-bet";
+import { SpecialBetsSection } from "@/components/predictions/special-bets-section";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import type {
@@ -16,6 +16,7 @@ import type {
   PlayerRow,
   PredictionRow,
   ScoringRuleRow,
+  TeamRow,
   TournamentPredictionRow,
 } from "@/lib/predictions-types";
 import type { MatchResultDetail, SideBetOutcome } from "@/lib/prediction-scoring";
@@ -30,6 +31,7 @@ import {
   isKnockoutFixture,
   isPredictionSaved,
   isTopScorerSaved,
+  isWinnerSaved,
   parseExtraTimeDraft,
   parseFirstGoalMinuteDraft,
   parseScoreDraft,
@@ -38,8 +40,12 @@ import {
   topScorerDraftFromRow,
   topScorerDraftHasValue,
   topScorerDraftsAreEqual,
+  winnerDraftFromRow,
+  winnerDraftHasValue,
+  winnerDraftsAreEqual,
   type PredictionDraft,
   type TopScorerDraft,
+  type WinnerDraft,
 } from "@/lib/predictions-utils";
 
 type PredictionsClientProps = {
@@ -49,6 +55,7 @@ type PredictionsClientProps = {
   resultsByMatch: Record<number, MatchResultDetail>;
   sideBetsByMatch: Record<number, SideBetOutcome>;
   players: PlayerRow[];
+  teams: TeamRow[];
   tournamentPrediction: TournamentPredictionRow | null;
   tournamentBetOpen: boolean;
   poolId: number | null;
@@ -96,6 +103,7 @@ export function PredictionsClient({
   resultsByMatch,
   sideBetsByMatch,
   players,
+  teams,
   tournamentPrediction,
   tournamentBetOpen,
   poolId,
@@ -123,6 +131,12 @@ export function PredictionsClient({
   const [baseline, setBaseline] = useState(() =>
     buildInitialDrafts(fixtures, predictionsByMatch),
   );
+  const [winnerDraft, setWinnerDraft] = useState<WinnerDraft>(() =>
+    winnerDraftFromRow(tournamentPrediction ?? undefined),
+  );
+  const [winnerBaseline, setWinnerBaseline] = useState<WinnerDraft>(() =>
+    winnerDraftFromRow(tournamentPrediction ?? undefined),
+  );
   const [topScorerDraft, setTopScorerDraft] = useState<TopScorerDraft>(() =>
     topScorerDraftFromRow(tournamentPrediction ?? undefined),
   );
@@ -131,6 +145,9 @@ export function PredictionsClient({
   );
   const [savedMatches, setSavedMatches] = useState(() =>
     buildSavedMatches(fixtures, predictionsByMatch),
+  );
+  const [winnerSaved, setWinnerSaved] = useState(() =>
+    isWinnerSaved(tournamentPrediction ?? undefined),
   );
   const [topScorerSaved, setTopScorerSaved] = useState(() =>
     isTopScorerSaved(tournamentPrediction ?? undefined),
@@ -147,12 +164,20 @@ export function PredictionsClient({
     return !draftsAreEqual(draft, saved) && draftHasAnyValue(draft);
   }).length;
 
+  const winnerPending =
+    tournamentBetOpen &&
+    winnerDraftHasValue(winnerDraft) &&
+    !winnerDraftsAreEqual(winnerDraft, winnerBaseline);
+
   const topScorerPending =
     tournamentBetOpen &&
     topScorerDraftHasValue(topScorerDraft) &&
     !topScorerDraftsAreEqual(topScorerDraft, topScorerBaseline);
 
-  const pendingCount = matchPendingCount + (topScorerPending ? 1 : 0);
+  const tournamentPending = winnerPending || topScorerPending;
+
+  const pendingCount =
+    matchPendingCount + (winnerPending ? 1 : 0) + (topScorerPending ? 1 : 0);
 
   function handleDraftChange(
     idMatch: number,
@@ -169,6 +194,11 @@ export function PredictionsClient({
         [field]: value,
       },
     }));
+    setSuccess(null);
+  }
+
+  function handleWinnerChange(field: keyof WinnerDraft, value: string) {
+    setWinnerDraft((prev) => ({ ...prev, [field]: value }));
     setSuccess(null);
   }
 
@@ -246,24 +276,53 @@ export function PredictionsClient({
       });
     }
 
-    let topScorerToSave: {
-      top_scorer_player_id: number;
-      top_scorer_goals: number;
+    let tournamentToSave: {
+      winner_team_id: number | null;
+      top_scorer_player_id: number | null;
+      top_scorer_goals: number | null;
     } | null = null;
 
-    if (topScorerPending) {
-      if (topScorerDraft.playerId === "" || topScorerDraft.goals === "") {
-        invalidMatches.push("Goleador del torneo (indica jugador y goles)");
-      } else {
-        const goals = parseTopScorerGoalsDraft(topScorerDraft);
-        if (goals === "invalid") {
-          invalidMatches.push("Goleador del torneo (goles inválidos, 1–20)");
-        } else if (goals != null) {
-          topScorerToSave = {
-            top_scorer_player_id: Number(topScorerDraft.playerId),
-            top_scorer_goals: goals,
-          };
+    if (tournamentPending) {
+      let winnerTeamId: number | null = winnerDraft.teamId
+        ? Number(winnerDraft.teamId)
+        : null;
+      let topScorerPlayerId: number | null = topScorerDraft.playerId
+        ? Number(topScorerDraft.playerId)
+        : null;
+      let topScorerGoals: number | null = null;
+
+      if (winnerPending) {
+        if (winnerDraft.teamId === "") {
+          invalidMatches.push("Campeón del Mundial (indica un país)");
         }
+      }
+
+      if (topScorerPending) {
+        if (topScorerDraft.playerId === "" || topScorerDraft.goals === "") {
+          invalidMatches.push("Goleador del torneo (indica jugador y goles)");
+        } else {
+          const goals = parseTopScorerGoalsDraft(topScorerDraft);
+          if (goals === "invalid") {
+            invalidMatches.push("Goleador del torneo (goles inválidos, 1–20)");
+          } else if (goals != null) {
+            topScorerGoals = goals;
+          }
+        }
+      } else if (isTopScorerSaved(tournamentPrediction ?? undefined)) {
+        topScorerPlayerId = tournamentPrediction?.top_scorer_player_id ?? null;
+        topScorerGoals = tournamentPrediction?.top_scorer_goals ?? null;
+      }
+
+      if (!winnerPending && isWinnerSaved(tournamentPrediction ?? undefined)) {
+        winnerTeamId = tournamentPrediction?.winner_team_id ?? null;
+      }
+
+      if (invalidMatches.length === 0) {
+        tournamentToSave = {
+          winner_team_id: winnerTeamId,
+          top_scorer_player_id: topScorerPlayerId,
+          top_scorer_goals: topScorerGoals,
+        };
       }
     }
 
@@ -275,7 +334,7 @@ export function PredictionsClient({
       return;
     }
 
-    if (toSave.length === 0 && !topScorerToSave) {
+    if (toSave.length === 0 && !tournamentToSave) {
       setError("No hay pronósticos nuevos para guardar.");
       setLoading(false);
       return;
@@ -327,22 +386,28 @@ export function PredictionsClient({
         });
       }
 
-      if (topScorerToSave) {
-        const { error: topScorerError } = await supabase
+      if (tournamentToSave) {
+        const { error: tournamentError } = await supabase
           .from("tournament_predictions")
           .upsert(
             {
               id_pool: resolvedPoolId,
-              ...topScorerToSave,
+              ...tournamentToSave,
               updated_at: new Date().toISOString(),
             },
             { onConflict: "id_pool" },
           );
 
-        if (topScorerError) throw topScorerError;
+        if (tournamentError) throw tournamentError;
 
-        setTopScorerBaseline(topScorerDraft);
-        setTopScorerSaved(true);
+        if (winnerPending) {
+          setWinnerBaseline(winnerDraft);
+          setWinnerSaved(true);
+        }
+        if (topScorerPending) {
+          setTopScorerBaseline(topScorerDraft);
+          setTopScorerSaved(true);
+        }
       }
 
       const savedParts: string[] = [];
@@ -351,8 +416,13 @@ export function PredictionsClient({
           `${toSave.length} partido${toSave.length === 1 ? "" : "s"}`,
         );
       }
-      if (topScorerToSave) {
-        savedParts.push("goleador del torneo");
+      if (tournamentToSave) {
+        const tournamentParts: string[] = [];
+        if (winnerPending) tournamentParts.push("campeón del mundial");
+        if (topScorerPending) tournamentParts.push("goleador del torneo");
+        if (tournamentParts.length > 0) {
+          savedParts.push(tournamentParts.join(" y "));
+        }
       }
 
       setSuccess(`Guardado: ${savedParts.join(" y ")}.`);
@@ -396,12 +466,17 @@ export function PredictionsClient({
         />
 
         {!searchQuery.trim() && (
-          <TopScorerBet
+          <SpecialBetsSection
+            teams={teams}
             players={players}
-            draft={topScorerDraft}
-            onDraftChange={handleTopScorerChange}
+            scoringRules={scoringRules}
+            winnerDraft={winnerDraft}
+            topScorerDraft={topScorerDraft}
+            onWinnerChange={handleWinnerChange}
+            onTopScorerChange={handleTopScorerChange}
             disabled={!isAuthenticated || !tournamentBetOpen}
-            isSaved={topScorerSaved}
+            winnerSaved={winnerSaved}
+            topScorerSaved={topScorerSaved}
           />
         )}
 

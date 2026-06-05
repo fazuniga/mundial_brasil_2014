@@ -4,7 +4,7 @@ import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SiteHeader } from "@/components/site-header";
 import { AdminClient } from "@/components/admin/admin-client";
 import { AdminRoundPhases } from "@/components/admin/admin-round-phases";
-import type { FixtureRow, PlayerRow } from "@/lib/predictions-types";
+import type { FixtureRow, PlayerRow, TeamRow } from "@/lib/predictions-types";
 import type { MatchGoalRow, MatchResultRow, MatchTeamRow } from "@/lib/admin-types";
 import { mergeFixturesWithTeams } from "@/lib/admin-utils";
 
@@ -32,10 +32,12 @@ export default async function AdminPage() {
     { data: fixturesRaw },
     { data: roundsRaw },
     { data: resultsRaw },
-    { data: teamsRaw },
+    { data: matchTeamsRaw },
     { data: playersRaw },
     { data: goalsRaw },
     { data: topScorerSummary },
+    { data: groupTeamsRaw },
+    { data: tournamentResultsRaw },
   ] = await Promise.all([
     supabase
       .from("v_fixture")
@@ -63,14 +65,30 @@ export default async function AdminPage() {
       .order("id_match")
       .order("minute"),
     supabase.from("v_tournament_top_scorer_summary").select("*").single(),
+    supabase
+      .from("teams")
+      .select("id_team, country, code, groups(group_code)")
+      .not("id_group", "is", null)
+      .order("country"),
+    supabase.from("tournament_results").select("winner_team_id").eq("id", 1).maybeSingle(),
   ]);
 
   const fixtures = mergeFixturesWithTeams(
     (fixturesRaw ?? []) as FixtureRow[],
-    (teamsRaw ?? []) as MatchTeamRow[],
+    (matchTeamsRaw ?? []) as MatchTeamRow[],
   );
 
   const players = (playersRaw ?? []) as PlayerRow[];
+  const teams: TeamRow[] = (groupTeamsRaw ?? []).map((row) => {
+    const nested = row.groups as { group_code: string } | { group_code: string }[] | null;
+    const groupCode = Array.isArray(nested) ? nested[0]?.group_code : nested?.group_code;
+    return {
+      id_team: row.id_team,
+      country: row.country,
+      code: row.code,
+      group_code: groupCode ?? null,
+    };
+  });
   const playerNameById = new Map(players.map((p) => [p.id_player, p.name]));
 
   const resultsByMatch: Record<number, MatchResultRow> = {};
@@ -119,7 +137,9 @@ export default async function AdminPage() {
           resultsByMatch={resultsByMatch}
           goalsByMatch={goalsByMatch}
           players={players}
+          teams={teams}
           topScorerSummary={topScorerSummary}
+          tournamentResults={tournamentResultsRaw}
         />
       </main>
       <MobileBottomNav active="admin" isAdmin />

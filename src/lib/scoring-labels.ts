@@ -3,13 +3,15 @@ const RULE_LABELS: Record<string, string> = {
   goal_difference: "Diferencia de goles",
   winner: "Ganador del partido",
   extra_time: "¿Habrá prórroga?",
-  first_goal_minute: "Intervalo del primer gol",
+  first_goal_minute: "Intervalo de tiempo del primer gol",
+  tournament_winner: "Campeón del Mundial",
   top_scorer_player: "Goleador del torneo",
-  top_scorer_goals: "Goles del máximo goleador del torneo",
+  top_scorer_goals: "Goles del máximo goleador",
 };
 
 const RULE_HELPERS: Record<string, string> = {
   extra_time: "Solo fases eliminatorias",
+  tournament_winner: "Selecciona el país campeón del Mundial 2026",
   top_scorer_player: "Bota de oro compartida: cualquier jugador empatado en el máximo cuenta",
   top_scorer_goals: "Debe coincidir con el total del líder (empates incluidos)",
 };

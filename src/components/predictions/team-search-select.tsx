@@ -4,26 +4,26 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TeamFlag } from "@/components/team-flag";
-import type { PlayerRow } from "@/lib/predictions-types";
+import type { TeamRow } from "@/lib/predictions-types";
 import { cn } from "@/lib/utils";
 
-type PlayerSearchSelectProps = {
+type TeamSearchSelectProps = {
   id: string;
   label: React.ReactNode;
-  players: PlayerRow[];
+  teams: TeamRow[];
   value: string;
-  onChange: (playerId: string) => void;
+  onChange: (teamId: string) => void;
   disabled?: boolean;
 };
 
-export function PlayerSearchSelect({
+export function TeamSearchSelect({
   id,
   label,
-  players,
+  teams,
   value,
   onChange,
   disabled = false,
-}: PlayerSearchSelectProps) {
+}: TeamSearchSelectProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -54,25 +54,25 @@ export function PlayerSearchSelect({
   }, [open]);
 
   const selected = useMemo(
-    () => players.find((p) => p.id_player.toString() === value),
-    [players, value],
+    () => teams.find((t) => t.id_team.toString() === value),
+    [teams, value],
   );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return players.slice(0, 50);
-    return players
+    if (!q) return teams.slice(0, 50);
+    return teams
       .filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.team_country.toLowerCase().includes(q) ||
-          p.team_code.toLowerCase().includes(q),
+        (t) =>
+          t.country.toLowerCase().includes(q) ||
+          t.code.toLowerCase().includes(q) ||
+          (t.group_code?.toLowerCase().includes(q) ?? false),
       )
       .slice(0, 50);
-  }, [players, query]);
+  }, [teams, query]);
 
-  function handleSelect(playerId: number) {
-    onChange(playerId.toString());
+  function handleSelect(teamId: number) {
+    onChange(teamId.toString());
     setQuery("");
     setOpen(false);
   }
@@ -94,10 +94,13 @@ export function PlayerSearchSelect({
           )}
         >
           <span className="flex min-w-0 items-center gap-2">
-            <TeamFlag code={selected.team_code} country={selected.team_country} />
+            <TeamFlag code={selected.code} country={selected.country} />
             <span className="truncate">
-              {selected.name}{" "}
-              <span className="text-on-surface-variant">({selected.team_country})</span>
+              {selected.country}{" "}
+              <span className="text-on-surface-variant">
+                ({selected.code}
+                {selected.group_code ? ` · Grupo ${selected.group_code}` : ""})
+              </span>
             </span>
           </span>
           {!disabled && (
@@ -109,7 +112,7 @@ export function PlayerSearchSelect({
           <Input
             id={id}
             type="search"
-            placeholder="Buscar jugador o selección…"
+            placeholder="Buscar país o código…"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -130,20 +133,21 @@ export function PlayerSearchSelect({
                   Sin resultados
                 </li>
               ) : (
-                filtered.map((player) => (
-                  <li key={player.id_player}>
+                filtered.map((team) => (
+                  <li key={team.id_team}>
                     <button
                       type="button"
                       role="option"
-                      aria-selected={value === player.id_player.toString()}
-                      onClick={() => handleSelect(player.id_player)}
+                      aria-selected={value === team.id_team.toString()}
+                      onClick={() => handleSelect(team.id_team)}
                       className="flex w-full items-center gap-2 px-3 py-2 text-left font-geist text-sm hover:bg-surface-container-high"
                     >
-                      <TeamFlag code={player.team_code} country={player.team_country} />
+                      <TeamFlag code={team.code} country={team.country} />
                       <span className="min-w-0 flex flex-col">
-                        <span className="font-medium text-on-surface">{player.name}</span>
+                        <span className="font-medium text-on-surface">{team.country}</span>
                         <span className="text-xs text-on-surface-variant">
-                          {player.team_country} · {player.position ?? "—"}
+                          {team.code}
+                          {team.group_code ? ` · Grupo ${team.group_code}` : ""}
                         </span>
                       </span>
                     </button>

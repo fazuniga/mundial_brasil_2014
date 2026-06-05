@@ -282,7 +282,7 @@ export function AdminMatchSection({
           <thead>
             <tr className="border-b border-border/40 bg-primary-fixed/25">
               <th className="w-10 px-2 py-3" aria-label="Editar resultado" />
-              <th className="px-3 py-3 font-geist text-sm font-semibold uppercase tracking-wide text-primary">
+              <th className="text-center px-3 py-3 font-geist text-sm font-semibold uppercase tracking-wide text-primary">
                 Fecha/Hora
               </th>
               <th className="px-3 py-3 font-geist text-sm font-semibold uppercase tracking-wide text-primary">
@@ -291,10 +291,10 @@ export function AdminMatchSection({
               <th className="px-3 py-3 text-center font-geist text-sm font-semibold uppercase tracking-wide text-primary">
                 Marcador
               </th>
-              <th className="px-3 py-3 font-geist text-sm font-semibold uppercase tracking-wide text-primary">
+              <th className="text-right px-3 py-3 font-geist text-sm font-semibold uppercase tracking-wide text-primary">
                 Visitante
               </th>
-              <th className="px-3 py-3 font-geist text-sm font-semibold uppercase tracking-wide text-primary">
+              <th className="text-center px-3 py-3 font-geist text-sm font-semibold uppercase tracking-wide text-primary">
                 Resultado
               </th>
             </tr>
@@ -348,7 +348,7 @@ export function AdminMatchSection({
                       </button>
                     </td>
 
-                    <td className="px-3 py-4 align-middle">
+                    <td className="text-center px-3 py-4 align-middle">
                       <p className="font-geist text-sm capitalize text-on-surface">
                         {dateShort}
                       </p>
@@ -387,7 +387,7 @@ export function AdminMatchSection({
                       />
                     </td>
 
-                    <td className="px-3 py-4 align-middle">
+                    <td className="text-center px-3 py-4 align-middle">
                       {isSaved ? (
                         <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 font-geist text-sm font-medium text-primary">
                           <MaterialIcon name="check_circle" className="text-base" />

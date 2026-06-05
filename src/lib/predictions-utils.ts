@@ -20,6 +20,10 @@ export type TopScorerDraft = {
   goals: string;
 };
 
+export type WinnerDraft = {
+  teamId: string;
+};
+
 export type FixtureGroup = {
   key: string;
   title: string;
@@ -232,6 +236,28 @@ export function isTopScorerSaved(
   row: { top_scorer_player_id: number | null; top_scorer_goals: number | null } | undefined,
 ): boolean {
   return row?.top_scorer_player_id != null && row?.top_scorer_goals != null;
+}
+
+export function winnerDraftFromRow(
+  row: { winner_team_id: number | null } | undefined,
+): WinnerDraft {
+  return {
+    teamId: row?.winner_team_id?.toString() ?? "",
+  };
+}
+
+export function winnerDraftHasValue(draft: WinnerDraft): boolean {
+  return draft.teamId !== "";
+}
+
+export function winnerDraftsAreEqual(a: WinnerDraft, b: WinnerDraft): boolean {
+  return a.teamId === b.teamId;
+}
+
+export function isWinnerSaved(
+  row: { winner_team_id: number | null } | undefined,
+): boolean {
+  return row?.winner_team_id != null;
 }
 
 export function parseScoreDraft(
