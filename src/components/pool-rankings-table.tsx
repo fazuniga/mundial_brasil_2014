@@ -7,11 +7,24 @@ type PoolRankingsTableProps = {
   currentUserId?: string | null;
 };
 
-function rankMedal(position: number): string | null {
+function rankMedalIcon(position: number): string | null {
   if (position === 1) return "emoji_events";
   if (position === 2) return "military_tech";
   if (position === 3) return "workspace_premium";
   return null;
+}
+
+function rankMedalAriaLabel(position: number): string | null {
+  if (position === 1) return "Primer lugar";
+  if (position === 2) return "Segundo lugar";
+  if (position === 3) return "Tercer lugar";
+  return null;
+}
+
+function rankMedalClassName(position: number): string {
+  if (position === 1) return "text-base text-amber-500 sm:text-lg";
+  if (position === 2) return "text-base text-slate-400 sm:text-lg";
+  return "text-base text-amber-700 sm:text-lg";
 }
 
 export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProps) {
@@ -35,37 +48,51 @@ export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProp
       r.tournament_points > 0,
   );
 
+  const cellPad = "px-2 py-2 sm:px-4 sm:py-3";
+  const breakdownHead = "hidden px-2 py-2 text-right sm:px-3 sm:py-3";
+  const breakdownCell = "hidden px-2 py-2 text-right tabular-nums sm:px-3 sm:py-3";
+
   return (
-    <div className="overflow-x-auto rounded-xl border border-outline-variant/60 bg-card shadow-sm">
-      <table className="w-full min-w-[32rem] border-collapse text-left font-geist text-sm">
+    <div className="overflow-x-auto rounded-xl border border-outline-variant/60 bg-card shadow-sm sm:overflow-visible">
+      <table className="w-full table-fixed border-collapse text-left font-geist text-xs sm:table-auto sm:min-w-[32rem] sm:text-sm">
         <thead>
-          <tr className="border-b border-outline-variant/50 bg-surface-container-lowest text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-            <th className="px-4 py-3 text-center">#</th>
-            <th className="px-4 py-3">
+          <tr className="border-b border-outline-variant/50 bg-surface-container-lowest text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant sm:text-xs">
+            <th className={`${cellPad} w-9 text-center sm:w-auto`}>#</th>
+            <th className={cellPad}>
               <span className="sr-only">Estado de pago</span>
               Jugador
             </th>
-            <th className="px-4 py-3 text-right">Puntos</th>
+            <th className={`${cellPad} w-14 text-center sm:w-auto`}>Pts</th>
             {showBreakdown ? (
               <>
-                <th className="hidden px-3 py-3 text-right sm:table-cell" title={scoringRuleLabel("exact_score")}>
+                <th
+                  className={`${breakdownHead} sm:table-cell`}
+                  title={scoringRuleLabel("exact_score")}
+                >
                   Exactos
                 </th>
-                <th className="hidden px-3 py-3 text-right md:table-cell" title={scoringRuleLabel("goal_difference")}>
+                <th
+                  className={`${breakdownHead} md:table-cell`}
+                  title={scoringRuleLabel("goal_difference")}
+                >
                   Dif.
                 </th>
-                <th className="hidden px-3 py-3 text-right lg:table-cell" title={scoringRuleLabel("winner")}>
+                <th
+                  className={`${breakdownHead} lg:table-cell`}
+                  title={scoringRuleLabel("winner")}
+                >
                   Ganador
                 </th>
-                <th className="hidden px-3 py-3 text-right xl:table-cell">Apuestas</th>
-                <th className="hidden px-3 py-3 text-right xl:table-cell">Torneo</th>
+                <th className={`${breakdownHead} xl:table-cell`}>Apuestas</th>
+                <th className={`${breakdownHead} xl:table-cell`}>Torneo</th>
               </>
             ) : null}
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => {
-            const medal = rankMedal(row.rank_position);
+            const medal = rankMedalIcon(row.rank_position);
+            const medalLabel = rankMedalAriaLabel(row.rank_position);
             const isCurrentUser = currentUserId != null && row.owner_id === currentUserId;
 
             return (
@@ -77,26 +104,23 @@ export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProp
                     : "border-b border-outline-variant/30"
                 }
               >
-                <td className="px-4 py-3 text-center tabular-nums">
-                  <span className="inline-flex items-center justify-center gap-1 font-semibold text-on-surface">
-                    {medal ? (
-                      <MaterialIcon
-                        name={medal}
-                        className={
-                          row.rank_position === 1
-                            ? "text-xl text-amber-500"
-                            : row.rank_position === 2
-                              ? "text-xl text-slate-400"
-                              : "text-xl text-amber-700"
-                        }
-                      />
-                    ) : (
-                      row.rank_position
-                    )}
-                  </span>
+                <td className={`${cellPad} w-9 text-center tabular-nums sm:w-auto`}>
+                  <span className="font-semibold text-on-surface">{row.rank_position}</span>
                 </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
+                <td className={cellPad}>
+                  <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+                    {medal && medalLabel ? (
+                      <span
+                        title={medalLabel}
+                        aria-label={medalLabel}
+                        className="inline-flex shrink-0"
+                      >
+                        <MaterialIcon
+                          name={medal}
+                          className={rankMedalClassName(row.rank_position)}
+                        />
+                      </span>
+                    ) : null}
                     {row.id_pool != null ? (
                       <span
                         title={row.is_paid ? "Pagado" : "Pendiente de pago"}
@@ -107,44 +131,44 @@ export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProp
                           name={row.is_paid ? "paid" : "money_off"}
                           className={
                             row.is_paid
-                              ? "text-base text-primary"
-                              : "text-base text-accent"
+                              ? "text-sm text-primary sm:text-base"
+                              : "text-sm text-accent sm:text-base"
                           }
                         />
                       </span>
                     ) : null}
                     <div className="min-w-0">
-                      <p className="font-medium text-on-surface">
+                      <p className="truncate font-medium text-on-surface">
                         {row.display_name || row.username}
                       </p>
                       {row.username ? (
-                        <p className="font-mono text-xs text-on-surface-variant">
+                        <p className="hidden truncate font-mono text-xs text-on-surface-variant sm:block">
                           @{row.username}
                         </p>
                       ) : null}
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-right">
-                  <span className="font-headline text-lg font-bold tabular-nums text-primary">
+                <td className={`${cellPad} w-14 text-center sm:w-auto`}>
+                  <span className="font-headline text-base font-bold tabular-nums text-primary sm:text-lg">
                     {row.total_points}
                   </span>
                 </td>
                 {showBreakdown ? (
                   <>
-                    <td className="hidden px-3 py-3 text-right tabular-nums sm:table-cell">
+                    <td className={`${breakdownCell} sm:table-cell`}>
                       {row.exact_hits}
                     </td>
-                    <td className="hidden px-3 py-3 text-right tabular-nums md:table-cell">
+                    <td className={`${breakdownCell} md:table-cell`}>
                       {row.goal_diff_hits}
                     </td>
-                    <td className="hidden px-3 py-3 text-right tabular-nums lg:table-cell">
+                    <td className={`${breakdownCell} lg:table-cell`}>
                       {row.winner_hits}
                     </td>
-                    <td className="hidden px-3 py-3 text-right tabular-nums xl:table-cell">
+                    <td className={`${breakdownCell} xl:table-cell`}>
                       {row.side_bet_points}
                     </td>
-                    <td className="hidden px-3 py-3 text-right tabular-nums xl:table-cell">
+                    <td className={`${breakdownCell} xl:table-cell`}>
                       {row.tournament_points}
                     </td>
                   </>
