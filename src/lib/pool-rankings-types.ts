@@ -5,6 +5,7 @@ export type PoolRankingRow = {
   username: string | null;
   is_paid_group_phase: boolean;
   is_paid_knockout: boolean;
+  bets_placed: number;
   match_points: number;
   exact_hits: number;
   goal_diff_hits: number;

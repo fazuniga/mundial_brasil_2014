@@ -2160,6 +2160,18 @@ WITH weights AS (
     COALESCE(MAX(points) FILTER (WHERE rule_key = 'top_scorer_goals'), 0) AS pts_ts_goals
   FROM public.scoring_rules
 ),
+prediction_counts AS (
+  SELECT
+    id_pool,
+    COUNT(*) FILTER (
+      WHERE goals_home IS NOT NULL
+         OR goals_away IS NOT NULL
+         OR extra_time IS NOT NULL
+         OR first_goal_minute IS NOT NULL
+    )::int AS bets_placed
+  FROM public.predictions
+  GROUP BY id_pool
+),
 match_agg AS (
   SELECT
     id_pool,
@@ -2196,6 +2208,14 @@ owner_points AS (
   LEFT JOIN tournament_agg ta ON ta.id_pool = pl.id_pool
   GROUP BY pl.owner_id
 ),
+owner_bets AS (
+  SELECT
+    pl.owner_id,
+    COALESCE(SUM(pc.bets_placed), 0)::int AS bets_placed
+  FROM public.pools pl
+  LEFT JOIN prediction_counts pc ON pc.id_pool = pl.id_pool
+  GROUP BY pl.owner_id
+),
 primary_pool AS (
   SELECT DISTINCT ON (owner_id)
     owner_id,
@@ -2213,6 +2233,7 @@ totals AS (
     pr.username,
     COALESCE(pp.is_paid_group_phase, false) AS is_paid_group_phase,
     COALESCE(pp.is_paid_knockout, false) AS is_paid_knockout,
+    COALESCE(ob.bets_placed, 0) AS bets_placed,
     COALESCE(op.match_points, 0) AS match_points,
     COALESCE(op.exact_hits, 0) AS exact_hits,
     COALESCE(op.goal_diff_hits, 0) AS goal_diff_hits,
@@ -2224,6 +2245,7 @@ totals AS (
   FROM primary_pool pp
   INNER JOIN public.profiles pr ON pr.id = pp.owner_id
   LEFT JOIN owner_points op ON op.owner_id = pr.id
+  LEFT JOIN owner_bets ob ON ob.owner_id = pr.id
 )
 SELECT
   id_pool,
@@ -2232,6 +2254,7 @@ SELECT
   username,
   is_paid_group_phase,
   is_paid_knockout,
+  bets_placed,
   match_points,
   exact_hits,
   goal_diff_hits,
