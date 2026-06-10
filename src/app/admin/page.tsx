@@ -75,7 +75,7 @@ export default async function AdminPage() {
     supabase.from("tournament_results").select("winner_team_id").eq("id", 1).maybeSingle(),
     supabase
       .from("pools")
-      .select("id_pool, description, is_paid, owner_id, profiles(first_name, last_name, username)")
+      .select("id_pool, description, is_paid_group_phase, is_paid_knockout, owner_id, profiles(first_name, last_name, username)")
       .order("id_pool"),
   ]);
 
@@ -91,7 +91,8 @@ export default async function AdminPage() {
     return {
       id_pool: row.id_pool,
       description: row.description,
-      is_paid: row.is_paid,
+      is_paid_group_phase: row.is_paid_group_phase,
+      is_paid_knockout: row.is_paid_knockout,
       owner_id: row.owner_id,
       display_name: displayName || null,
       username: profile?.username ?? null,

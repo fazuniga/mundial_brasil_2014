@@ -59,7 +59,8 @@ export type TournamentResultsRow = {
 export type AdminPoolRow = {
   id_pool: number;
   description: string;
-  is_paid: boolean;
+  is_paid_group_phase: boolean;
+  is_paid_knockout: boolean;
   owner_id: string;
   display_name: string | null;
   username: string | null;

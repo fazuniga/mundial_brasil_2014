@@ -66,5 +66,6 @@ export type TournamentPredictionRow = {
 export type PoolRow = {
   id_pool: number;
   description: string;
-  is_paid: boolean;
+  is_paid_group_phase: boolean;
+  is_paid_knockout: boolean;
 };

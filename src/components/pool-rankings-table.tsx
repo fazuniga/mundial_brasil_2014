@@ -27,6 +27,32 @@ function rankMedalClassName(position: number): string {
   return "text-base text-amber-700 sm:text-lg";
 }
 
+function paymentStatusLabel(phase: string, isPaid: boolean): string {
+  return `${phase}: ${isPaid ? "Pagado" : "Pendiente de pago"}`;
+}
+
+function PaymentStatusIcon({
+  phase,
+  isPaid,
+}: {
+  phase: string;
+  isPaid: boolean;
+}) {
+  const label = paymentStatusLabel(phase, isPaid);
+  return (
+    <span title={label} aria-label={label} className="inline-flex shrink-0">
+      <MaterialIcon
+        name={isPaid ? "paid" : "money_off"}
+        className={
+          isPaid
+            ? "text-sm text-primary sm:text-base"
+            : "text-sm text-accent sm:text-base"
+        }
+      />
+    </span>
+  );
+}
+
 export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProps) {
   if (rows.length === 0) {
     return (
@@ -122,18 +148,14 @@ export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProp
                       </span>
                     ) : null}
                     {row.id_pool != null ? (
-                      <span
-                        title={row.is_paid ? "Pagado" : "Pendiente de pago"}
-                        aria-label={row.is_paid ? "Pagado" : "Pendiente de pago"}
-                        className="inline-flex shrink-0"
-                      >
-                        <MaterialIcon
-                          name={row.is_paid ? "paid" : "money_off"}
-                          className={
-                            row.is_paid
-                              ? "text-sm text-primary sm:text-base"
-                              : "text-sm text-accent sm:text-base"
-                          }
+                      <span className="inline-flex shrink-0 items-center gap-0.5">
+                        <PaymentStatusIcon
+                          phase="Fase de Grupos"
+                          isPaid={row.is_paid_group_phase}
+                        />
+                        <PaymentStatusIcon
+                          phase="Fases eliminatorias"
+                          isPaid={row.is_paid_knockout}
                         />
                       </span>
                     ) : null}
