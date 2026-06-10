@@ -5,9 +5,9 @@ import { SiteHeader } from "@/components/site-header";
 import { AdminClient } from "@/components/admin/admin-client";
 import { AdminPoolsSection } from "@/components/admin/admin-pools-section";
 import { AdminRoundPhases } from "@/components/admin/admin-round-phases";
-import type { FixtureRow, PlayerRow, TeamRow } from "@/lib/predictions-types";
-import type { AdminPoolRow, MatchGoalRow, MatchResultRow, MatchTeamRow } from "@/lib/admin-types";
-import { mergeFixturesWithTeams } from "@/lib/admin-utils";
+import type { FixtureRow, PlayerRow } from "@/lib/predictions-types";
+import type { AdminFixtureRow, AdminPoolRow, MatchGoalRow, MatchResultRow } from "@/lib/admin-types";
+import { filterAdminVisibleFixtures } from "@/lib/admin-utils";
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -33,18 +33,16 @@ export default async function AdminPage() {
     { data: fixturesRaw },
     { data: roundsRaw },
     { data: resultsRaw },
-    { data: matchTeamsRaw },
     { data: playersRaw },
     { data: goalsRaw },
     { data: topScorerSummary },
-    { data: groupTeamsRaw },
-    { data: tournamentResultsRaw },
+    { data: winnerSummaryRaw },
     { data: poolsRaw },
   ] = await Promise.all([
     supabase
-      .from("v_fixture")
+      .from("v_fixture_resolved")
       .select(
-        "id_match, id_round, name_round, group_code, dow, match_date, match_time, home_code, home_country, away_code, away_country, city, stadium, round_predictions_enabled, predictions_open",
+        "id_match, id_round, name_round, group_code, dow, match_date, match_time, home_code, home_country, away_code, away_country, city, stadium, round_predictions_enabled, predictions_open, home_team_id, away_team_id",
       )
       .order("match_date")
       .order("match_time"),
@@ -53,7 +51,6 @@ export default async function AdminPage() {
       .select("id_round, name_round, predictions_enabled")
       .order("id_round"),
     supabase.from("match_results").select("*"),
-    supabase.from("matches").select("id_match, home_team_id, away_team_id"),
     supabase
       .from("v_players")
       .select(
@@ -68,11 +65,9 @@ export default async function AdminPage() {
       .order("minute"),
     supabase.from("v_tournament_top_scorer_summary").select("*").single(),
     supabase
-      .from("teams")
-      .select("id_team, country, code, groups(group_code)")
-      .not("id_group", "is", null)
-      .order("country"),
-    supabase.from("tournament_results").select("winner_team_id").eq("id", 1).maybeSingle(),
+      .from("v_tournament_winner_summary")
+      .select("winner_team_id, winner_country, winner_code")
+      .single(),
     supabase
       .from("pools")
       .select("id_pool, description, is_paid_group_phase, is_paid_knockout, owner_id, profiles(first_name, last_name, username)")
@@ -99,22 +94,15 @@ export default async function AdminPage() {
     };
   });
 
-  const fixtures = mergeFixturesWithTeams(
-    (fixturesRaw ?? []) as FixtureRow[],
-    (matchTeamsRaw ?? []) as MatchTeamRow[],
+  const fixtures: AdminFixtureRow[] = filterAdminVisibleFixtures(
+    (fixturesRaw ?? []).map((row) => ({
+      ...(row as FixtureRow),
+      home_team_id: (row as AdminFixtureRow).home_team_id ?? 0,
+      away_team_id: (row as AdminFixtureRow).away_team_id ?? 0,
+    })),
   );
 
   const players = (playersRaw ?? []) as PlayerRow[];
-  const teams: TeamRow[] = (groupTeamsRaw ?? []).map((row) => {
-    const nested = row.groups as { group_code: string } | { group_code: string }[] | null;
-    const groupCode = Array.isArray(nested) ? nested[0]?.group_code : nested?.group_code;
-    return {
-      id_team: row.id_team,
-      country: row.country,
-      code: row.code,
-      group_code: groupCode ?? null,
-    };
-  });
   const playerNameById = new Map(players.map((p) => [p.id_player, p.name]));
 
   const resultsByMatch: Record<number, MatchResultRow> = {};
@@ -165,9 +153,8 @@ export default async function AdminPage() {
           resultsByMatch={resultsByMatch}
           goalsByMatch={goalsByMatch}
           players={players}
-          teams={teams}
           topScorerSummary={topScorerSummary}
-          tournamentResults={tournamentResultsRaw}
+          winnerSummary={winnerSummaryRaw}
         />
       </main>
       <MobileBottomNav active="admin" isAdmin />

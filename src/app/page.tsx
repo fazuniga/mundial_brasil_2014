@@ -63,7 +63,7 @@ export default async function HomePage() {
         <TournamentRoadmap rounds={rounds ?? []} />
 
         <Link
-          href="/grupos"
+          href="/resultados"
           className="font-geist inline-flex w-max items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary-container"
         >
           <MaterialIcon name="grid_view" className="text-lg" />

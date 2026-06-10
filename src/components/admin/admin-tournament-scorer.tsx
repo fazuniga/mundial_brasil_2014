@@ -15,47 +15,38 @@ export function AdminTournamentScorer({ summary }: AdminTournamentScorerProps) {
   const hasLeader = goals > 0 && tiedCount > 0;
 
   return (
-    <section className="overflow-hidden rounded-xl border border-border/50 bg-white shadow-sm">
-      <div className="border-b border-border/40 bg-slate-50 px-5 py-4">
-        <div className="flex items-center gap-3">
-          <MaterialIcon name="emoji_events" className="text-2xl text-accent" />
-          <div>
-            <h2 className="font-geist text-base font-semibold text-on-surface">
-              Goleador del torneo
-            </h2>
-            <p className="font-geist text-sm text-on-surface-variant">
-              {scoringRuleLabel("top_scorer_player")} ·{" "}
-              {scoringRuleLabel("top_scorer_goals")} · se actualiza al registrar
-              goles en los partidos
-            </p>
-          </div>
+    <div className="space-y-3 p-5">
+      <div className="flex items-center gap-3">
+        <MaterialIcon name="emoji_events" className="text-xl text-accent" />
+        <div>
+          <h3 className="font-geist text-base font-semibold text-on-surface">
+            Goleador del torneo
+          </h3>
         </div>
       </div>
 
-      <div className="space-y-3 p-5">
-        {hasLeader ? (
-          <>
-            <p className="font-geist text-base text-slate-900">
-              <span className="font-semibold text-primary">{names}</span>
-              {" · "}
-              <span className="font-medium tabular-nums text-slate-800">{goals}</span>
-              {" "}
-              gol{goals === 1 ? "" : "es"}
-            </p>
-            {tiedCount > 1 ? (
-              <p className="font-geist text-sm text-on-surface-variant">
-                Bota de oro compartida ({tiedCount} jugadores empatados): cualquiera
-                de ellos cuenta para la apuesta de jugador.
-              </p>
-            ) : null}
-          </>
-        ) : (
-          <p className="font-geist text-base text-on-surface-variant">
-            Aún no hay goles registrados en el torneo. Se actualiza al cargar goles
-            en los partidos (excluye autogoles).
+      {hasLeader ? (
+        <>
+          <p className="font-geist text-base text-slate-900">
+            <span className="font-semibold text-primary">{names}</span>
+            {" · "}
+            <span className="font-medium tabular-nums text-slate-800">{goals}</span>
+            {" "}
+            gol{goals === 1 ? "" : "es"}
           </p>
-        )}
-      </div>
-    </section>
+          {tiedCount > 1 ? (
+            <p className="font-geist text-sm text-on-surface-variant">
+              Bota de oro compartida ({tiedCount} jugadores empatados): cualquiera
+              de ellos cuenta para la apuesta de jugador.
+            </p>
+          ) : null}
+        </>
+      ) : (
+        <p className="font-geist text-sm text-on-surface-variant">
+          Aún no hay goles registrados en el torneo. Se actualiza al cargar goles
+          en los partidos (excluye autogoles).
+        </p>
+      )}
+    </div>
   );
 }

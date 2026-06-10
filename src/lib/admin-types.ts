@@ -1,4 +1,4 @@
-import type { FixtureRow, PlayerRow, TeamRow } from "@/lib/predictions-types";
+import type { FixtureRow, PlayerRow } from "@/lib/predictions-types";
 
 export type MatchResultRow = {
   id_match: number;
@@ -52,8 +52,10 @@ export type MatchResultDraft = {
   firstGoalPlayerId: string;
 };
 
-export type TournamentResultsRow = {
+export type TournamentWinnerSummary = {
   winner_team_id: number | null;
+  winner_country: string | null;
+  winner_code: string | null;
 };
 
 export type AdminPoolRow = {
@@ -71,7 +73,6 @@ export type AdminClientProps = {
   resultsByMatch: Record<number, MatchResultRow>;
   goalsByMatch: Record<number, MatchGoalRow[]>;
   players: PlayerRow[];
-  teams: TeamRow[];
   topScorerSummary: TournamentTopScorerSummary | null;
-  tournamentResults: TournamentResultsRow | null;
+  winnerSummary: TournamentWinnerSummary | null;
 };

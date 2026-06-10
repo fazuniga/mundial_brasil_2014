@@ -207,7 +207,7 @@ export function AdminMatchGoals({
             size="sm"
             onClick={handleAdd}
             disabled={saving || adding}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto border border-border/40"
           >
             {adding ? "Agregando…" : "Agregar gol"}
           </Button>

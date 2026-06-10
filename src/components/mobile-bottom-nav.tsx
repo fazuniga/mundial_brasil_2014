@@ -3,7 +3,7 @@ import { MaterialIcon } from "@/components/material-icon";
 import { cn } from "@/lib/utils";
 
 type MobileBottomNavProps = {
-  active?: "home" | "matches" | "grupos" | "clasificacion" | "profile" | "admin";
+  active?: "home" | "matches" | "resultados" | "clasificacion" | "profile" | "admin";
   isAdmin?: boolean;
 };
 
@@ -70,25 +70,25 @@ export function MobileBottomNav({
       </Link>
 
       <Link
-        href="/grupos"
+        href="/resultados"
         className={cn(
           itemClass,
           compact ? "p-1" : "p-2",
-          active === "grupos" ? "text-primary" : "text-on-surface-variant",
+          active === "resultados" ? "text-primary" : "text-on-surface-variant",
         )}
       >
         <MaterialIcon
           name="grid_view"
-          filled={active === "grupos"}
+          filled={active === "resultados"}
           className={cn("mb-0.5", compact ? "text-xl" : "mb-1 text-2xl")}
         />
         <span
           className={cn(
             compact ? "text-[10px] leading-tight" : "text-xs",
-            active === "grupos" ? "font-bold" : "font-medium",
+            active === "resultados" ? "font-bold" : "font-medium",
           )}
         >
-          Grupos
+          Resultados
         </span>
       </Link>
 

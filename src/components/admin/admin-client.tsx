@@ -3,10 +3,10 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { PredictionsSearchBar } from "@/components/predictions/predictions-search-bar";
 import { Alert } from "@/components/ui/alert";
 import { AdminMatchSection } from "@/components/admin/admin-match-section";
-import { AdminTournamentScorer } from "@/components/admin/admin-tournament-scorer";
-import { AdminTournamentWinner } from "@/components/admin/admin-tournament-winner";
+import { AdminTournamentFinals } from "@/components/admin/admin-tournament-finals";
 import type {
   AdminClientProps,
   AdminFixtureRow,
@@ -15,12 +15,13 @@ import type {
   MatchResultRow,
 } from "@/lib/admin-types";
 import {
-  groupFixturesBySection,
+  groupAdminFixturesBySection,
   isMatchResultSaved,
   matchDraftsAreEqual,
   matchResultDraftFromRow,
   parseMatchResultPayload,
 } from "@/lib/admin-utils";
+import { filterSectionsBySearch } from "@/lib/predictions-utils";
 
 function buildInitialDrafts(
   resultsByMatch: Record<number, MatchResultRow>,
@@ -51,13 +52,21 @@ export function AdminClient({
   resultsByMatch,
   goalsByMatch: initialGoalsByMatch,
   players,
-  teams,
   topScorerSummary,
-  tournamentResults,
+  winnerSummary,
 }: AdminClientProps) {
   const router = useRouter();
   const matchIds = useMemo(() => fixtures.map((f) => f.id_match), [fixtures]);
-  const sections = useMemo(() => groupFixturesBySection(fixtures), [fixtures]);
+  const sections = useMemo(() => groupAdminFixturesBySection(fixtures), [fixtures]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const filteredSections = useMemo(
+    () => filterSectionsBySearch(sections, searchQuery),
+    [sections, searchQuery],
+  );
+  const filteredMatchCount = useMemo(
+    () => filteredSections.reduce((sum, section) => sum + section.fixtures.length, 0),
+    [filteredSections],
+  );
 
   const [drafts, setDrafts] = useState(() =>
     buildInitialDrafts(resultsByMatch, matchIds),
@@ -176,7 +185,7 @@ export function AdminClient({
   }
 
   return (
-    <div className="light-surface-panel flex flex-col gap-section-gap">
+    <div className="light-surface-panel flex flex-col gap-4">
       <div className="rounded-xl border border-border/50 bg-white px-5 py-4 shadow-sm">
         <p className="font-geist text-base text-on-surface">
           <span className="font-semibold tabular-nums text-primary">{savedCount}</span>
@@ -196,17 +205,25 @@ export function AdminClient({
         </Alert>
       ) : null}
 
-      <AdminTournamentWinner
-        teams={teams}
-        winnerTeamId={tournamentResults?.winner_team_id ?? null}
-        winnerCountry={
-          teams.find((t) => t.id_team === tournamentResults?.winner_team_id)?.country ?? null
-        }
+      <AdminTournamentFinals
+        winnerSummary={winnerSummary}
+        topScorerSummary={topScorerSummary}
       />
 
-      <AdminTournamentScorer summary={topScorerSummary} />
+      <PredictionsSearchBar
+        value={searchQuery}
+        onChange={setSearchQuery}
+        resultCount={searchQuery.trim() ? filteredMatchCount : undefined}
+      />
 
-      {sections.map((section) => (
+      {searchQuery.trim() && filteredSections.length === 0 ? (
+        <p className="font-geist text-base text-on-surface-variant">
+          Ningún partido coincide con &quot;{searchQuery.trim()}&quot;. Prueba con el
+          nombre del equipo, grupo o fase.
+        </p>
+      ) : null}
+
+      {filteredSections.map((section) => (
         <AdminMatchSection
           key={section.key}
           title={section.title}

@@ -137,7 +137,7 @@ export function PlayerSearchSelect({
                       role="option"
                       aria-selected={value === player.id_player.toString()}
                       onClick={() => handleSelect(player.id_player)}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left font-geist text-sm hover:bg-surface-container-high"
+                      className="flex w-full items-center gap-2 p-3! text-left font-geist text-sm hover:bg-surface-container-high"
                     >
                       <TeamFlag code={player.team_code} country={player.team_country} />
                       <span className="min-w-0 flex flex-col">

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 type SiteHeaderProps = {
   userEmail?: string | null;
   isAdmin?: boolean;
-  activeNav?: "home" | "matches" | "grupos" | "clasificacion" | "profile";
+  activeNav?: "home" | "matches" | "resultados" | "clasificacion" | "profile";
 };
 
 const navLinkClass =
@@ -52,20 +52,20 @@ export function SiteHeader({
             Apuestas
           </Link>
           <Link
-            href="/grupos"
+            href="/resultados"
             className={cn(
               navLinkClass,
-              activeNav === "grupos"
+              activeNav === "resultados"
                 ? "bg-surface-container-high font-bold text-primary"
                 : "text-on-surface-variant hover:bg-surface-container-high",
             )}
           >
             <MaterialIcon
               name="grid_view"
-              filled={activeNav === "grupos"}
+              filled={activeNav === "resultados"}
               className="text-xl"
             />
-            Grupos
+            Resultados
           </Link>
           <Link
             href="/clasificacion"

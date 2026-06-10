@@ -27,7 +27,8 @@ export function PredictionsSearchBar({
           className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lg text-on-surface-variant"
         />
         <Input
-          type="search"
+          type="text"
+          role="searchbox"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Buscar partido, equipo o grupo…"
@@ -47,7 +48,7 @@ export function PredictionsSearchBar({
         )}
       </div>
       {hasQuery && resultCount != null && (
-        <p className="font-geist text-xs text-on-surface-variant">
+        <p className="font-geist text-xs text-white">
           {resultCount === 0
             ? "Ningún partido coincide con la búsqueda"
             : `${resultCount} partido${resultCount === 1 ? "" : "s"} encontrado${resultCount === 1 ? "" : "s"}`}

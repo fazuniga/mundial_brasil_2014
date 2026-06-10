@@ -6,7 +6,77 @@ import type {
   MatchTeamRow,
 } from "@/lib/admin-types";
 import type { FixtureRow, PlayerRow } from "@/lib/predictions-types";
-import { groupFixturesBySection } from "@/lib/predictions-utils";
+import { groupFixturesBySection, type FixtureGroup } from "@/lib/predictions-utils";
+
+const GROUP_STAGE_ROUND_ID = 1;
+const GROUP_STAGE_SECTION_TITLE = "Fase de Grupos";
+
+/**
+ * Admin fixture list: group stage always; knockouts only when that round is
+ * enabled in Fases del torneo (rounds.predictions_enabled).
+ */
+export function filterAdminVisibleFixtures<
+  T extends Pick<FixtureRow, "id_round" | "round_predictions_enabled">,
+>(fixtures: T[]): T[] {
+  return fixtures.filter(
+    (fixture) =>
+      fixture.id_round === GROUP_STAGE_ROUND_ID || fixture.round_predictions_enabled,
+  );
+}
+
+function sortFixturesByKickoff(fixtures: FixtureRow[]): FixtureRow[] {
+  return [...fixtures].sort((a, b) => {
+    const dateCompare = a.match_date.localeCompare(b.match_date);
+    if (dateCompare !== 0) return dateCompare;
+    return a.match_time.localeCompare(b.match_time);
+  });
+}
+
+/** Admin: one Fase de Grupos section; knockouts grouped by round name, ordered by id_round. */
+export function groupAdminFixturesBySection(fixtures: FixtureRow[]): FixtureGroup[] {
+  const groupStage: FixtureRow[] = [];
+  const knockoutByRound = new Map<
+    number,
+    { nameRound: string; fixtures: FixtureRow[] }
+  >();
+
+  for (const fixture of fixtures) {
+    if (fixture.id_round === GROUP_STAGE_ROUND_ID) {
+      groupStage.push(fixture);
+      continue;
+    }
+
+    const existing = knockoutByRound.get(fixture.id_round);
+    if (existing) {
+      existing.fixtures.push(fixture);
+    } else {
+      knockoutByRound.set(fixture.id_round, {
+        nameRound: fixture.name_round,
+        fixtures: [fixture],
+      });
+    }
+  }
+
+  const sections: FixtureGroup[] = [];
+
+  if (groupStage.length > 0) {
+    sections.push({
+      key: "group-stage",
+      title: GROUP_STAGE_SECTION_TITLE,
+      fixtures: sortFixturesByKickoff(groupStage),
+    });
+  }
+
+  const knockouts = [...knockoutByRound.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([idRound, { nameRound, fixtures: roundFixtures }]) => ({
+      key: `round-${idRound}`,
+      title: nameRound,
+      fixtures: sortFixturesByKickoff(roundFixtures),
+    }));
+
+  return [...sections, ...knockouts];
+}
 
 export function mergeFixturesWithTeams(
   fixtures: FixtureRow[],
