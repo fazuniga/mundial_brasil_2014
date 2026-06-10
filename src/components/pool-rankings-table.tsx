@@ -65,6 +65,8 @@ export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProp
     );
   }
 
+  const showPayment = rows.some((r) => r.id_pool != null);
+
   const showBreakdown = rows.some(
     (r) =>
       r.exact_hits > 0 ||
@@ -75,6 +77,8 @@ export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProp
   );
 
   const cellPad = "px-2 py-2 sm:px-4 sm:py-3";
+  const paymentHead = `${cellPad} w-16 text-center sm:w-auto`;
+  const paymentCell = `${cellPad} w-16 text-center sm:w-auto`;
   const breakdownHead = "hidden px-2 py-2 text-right sm:px-3 sm:py-3";
   const breakdownCell = "hidden px-2 py-2 text-right tabular-nums sm:px-3 sm:py-3";
 
@@ -84,10 +88,17 @@ export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProp
         <thead>
           <tr className="border-b border-outline-variant/50 bg-surface-container-lowest text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant sm:text-xs">
             <th className={`${cellPad} w-9 text-center sm:w-auto`}>#</th>
-            <th className={cellPad}>
-              <span className="sr-only">Estado de pago</span>
-              Jugador
-            </th>
+            <th className={cellPad}>Jugador</th>
+            {showPayment ? (
+              <>
+                <th className={`${paymentHead} max-w-[4.25rem] leading-tight sm:max-w-none`}>
+                  Grupos
+                </th>
+                <th className={`${paymentHead} max-w-[4.25rem] leading-tight sm:max-w-none`}>
+                  Resto
+                </th>
+              </>
+            ) : null}
             <th className={`${cellPad} w-14 text-center sm:w-auto`}>Pts</th>
             {showBreakdown ? (
               <>
@@ -147,18 +158,6 @@ export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProp
                         />
                       </span>
                     ) : null}
-                    {row.id_pool != null ? (
-                      <span className="inline-flex shrink-0 items-center gap-0.5">
-                        <PaymentStatusIcon
-                          phase="Fase de Grupos"
-                          isPaid={row.is_paid_group_phase}
-                        />
-                        <PaymentStatusIcon
-                          phase="Fases eliminatorias"
-                          isPaid={row.is_paid_knockout}
-                        />
-                      </span>
-                    ) : null}
                     <div className="min-w-0">
                       <p className="truncate font-medium text-on-surface">
                         {row.display_name || row.username}
@@ -171,6 +170,26 @@ export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProp
                     </div>
                   </div>
                 </td>
+                {showPayment ? (
+                  <>
+                    <td className={paymentCell}>
+                      {row.id_pool != null ? (
+                        <PaymentStatusIcon
+                          phase="Fase de Grupos"
+                          isPaid={row.is_paid_group_phase}
+                        />
+                      ) : null}
+                    </td>
+                    <td className={paymentCell}>
+                      {row.id_pool != null ? (
+                        <PaymentStatusIcon
+                          phase="Fases eliminatorias"
+                          isPaid={row.is_paid_knockout}
+                        />
+                      ) : null}
+                    </td>
+                  </>
+                ) : null}
                 <td className={`${cellPad} w-14 text-center sm:w-auto`}>
                   <span className="font-headline text-base font-bold tabular-nums text-primary sm:text-lg">
                     {row.total_points}

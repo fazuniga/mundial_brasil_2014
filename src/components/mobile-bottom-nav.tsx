@@ -158,7 +158,7 @@ export function MobileBottomNav({
               active === "admin" ? "font-bold" : "font-medium",
             )}
           >
-            Administración
+            Admin
           </span>
         </Link>
       ) : null}
