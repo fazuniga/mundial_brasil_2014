@@ -179,6 +179,28 @@ export function groupFixturesBySection(fixtures: FixtureRow[]): FixtureGroup[] {
   return [...groups, ...knockouts];
 }
 
+export type PredictionSectionTitleMeta = {
+  name: string;
+  total: number;
+  saved: number;
+};
+
+export function getPredictionSectionTitleMeta(
+  baseTitle: string,
+  fixtures: FixtureRow[],
+  savedMatches: Set<number>,
+): PredictionSectionTitleMeta {
+  const total = fixtures.length;
+  const saved = fixtures.filter((fixture) =>
+    savedMatches.has(fixture.id_match),
+  ).length;
+  return { name: baseTitle, total, saved };
+}
+
+export function formatMatchCountLabel(count: number): string {
+  return `${count} partido${count === 1 ? "" : "s"}`;
+}
+
 function sortGroupFixtures(fixtures: FixtureRow[]): FixtureRow[] {
   return [...fixtures].sort((a, b) => {
     const dateCompare = a.match_date.localeCompare(b.match_date);

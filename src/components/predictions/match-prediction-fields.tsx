@@ -114,24 +114,24 @@ export function MatchStatusBadges({
       )}
     >
       {isLocked ? (
-        <span className="inline-flex justify-center gap-1 font-geist text-xs text-on-surface-variant justify-center">
+        <span className="flex items-center justify-center gap-1 font-geist text-xs text-on-surface-variant">
           <MaterialIcon name="lock" className="text-sm" />
           {lock === "round_closed" ? "Fase cerrada" : "Cerrado"}
         </span>
       ) : (
-        <span className="inline-flex justify-center items-center gap-1 font-geist text-xs text-primary">
+        <span className="flex items-center justify-center gap-1 font-geist text-xs text-primary">
           <MaterialIcon name="edit_calendar" className="text-sm" />
           Abierto
         </span>
       )}
       {isSaved && canEdit && (
-        <span className="inline-flex justify-center items-center gap-1 font-geist text-xs text-primary">
+        <span className="flex items-center justify-center gap-1 font-geist text-xs text-primary">
           <MaterialIcon name="check_circle" className="text-sm" />
           Guardado
         </span>
       )}
       {sideBetsFilled > 0 && !isExpanded && (
-        <span className="inline-flex justify-center items-center gap-1 font-geist text-xs text-on-surface-variant">
+        <span className="flex items-center justify-center gap-1 font-geist text-xs text-on-surface-variant">
           <MaterialIcon name="sports_soccer" className="text-sm" />
           +{sideBetsFilled} apuesta{sideBetsFilled === 1 ? "" : "s"}
         </span>

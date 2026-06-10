@@ -17,7 +17,9 @@ import type { FixtureRow, ScoringRuleRow } from "@/lib/predictions-types";
 import { MATCH_TIMEZONE_ABBR } from "@/lib/match-timezone";
 import {
   formatFixtureDateTime,
+  formatMatchCountLabel,
   getFixturePredictionLock,
+  getPredictionSectionTitleMeta,
   isFixtureSectionRoundClosed,
   isKnockoutFixture,
   type PredictionDraft,
@@ -69,13 +71,27 @@ export function GroupPredictionsTable({
     });
   }
 
-  const subtitle = `${fixtures.length} partido${fixtures.length === 1 ? "" : "s"}`;
   const roundClosed = isFixtureSectionRoundClosed(fixtures);
+  const { name, total, saved } = getPredictionSectionTitleMeta(
+    title,
+    fixtures,
+    savedMatches,
+  );
+  const totalLabel = formatMatchCountLabel(total);
+  const sectionLabel = `${name} · ${totalLabel} · ${saved} / ${totalLabel} con apuesta`;
 
   return (
     <CollapsibleSection
-      title={title}
-      subtitle={subtitle}
+      title={sectionLabel}
+      titleContent={
+        <h2 className="font-geist text-sm text-on-surface flex items-center gap-1">
+          <span className="font-semibold">{name}</span>
+          <span className="font-normal">·</span>
+          <span className="text-xs font-normal text-on-surface-variant">
+            {saved} / {totalLabel} con apuesta
+          </span>
+        </h2>
+      }
       defaultOpen={defaultOpen}
       className={roundClosed ? "opacity-75" : undefined}
     >

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 type CollapsibleSectionProps = {
   title: string;
   subtitle?: string;
+  titleContent?: ReactNode;
   defaultOpen?: boolean;
   children: ReactNode;
   className?: string;
@@ -15,6 +16,7 @@ type CollapsibleSectionProps = {
 export function CollapsibleSection({
   title,
   subtitle,
+  titleContent,
   defaultOpen = true,
   children,
   className,
@@ -26,7 +28,7 @@ export function CollapsibleSection({
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-xl border border-outline-variant/60 bg-card shadow-sm",
+        "overflow-hidden rounded-lg border border-outline-variant/60 bg-card shadow-sm",
         className,
       )}
     >
@@ -38,10 +40,14 @@ export function CollapsibleSection({
         aria-label={open ? `Ocultar ${matchLabel}` : `Mostrar ${matchLabel}`}
       >
         <div className="min-w-0">
-          <h2 className="font-geist text-sm font-semibold text-on-surface">{title}</h2>
-          {subtitle ? (
-            <p className="font-geist text-xs text-on-surface-variant">{subtitle}</p>
-          ) : null}
+          {titleContent ?? (
+            <>
+              <h2 className="font-geist text-sm font-semibold text-on-surface">{title}</h2>
+              {subtitle ? (
+                <p className="font-geist text-xs text-on-surface-variant">{subtitle}</p>
+              ) : null}
+            </>
+          )}
         </div>
         <MaterialIcon
           name={open ? "remove_circle" : "add_circle"}

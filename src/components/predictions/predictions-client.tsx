@@ -465,6 +465,10 @@ export function PredictionsClient({
           resultCount={searchQuery.trim() ? filteredMatchCount : undefined}
         />
 
+        <div className="lg:hidden">
+          <ScoringRulesCard rules={scoringRules} collapsible />
+        </div>
+
         {!searchQuery.trim() && (
           <SpecialBetsSection
             teams={teams}
@@ -517,7 +521,7 @@ export function PredictionsClient({
         )}
 
         {isAuthenticated && (
-          <div className="sticky bottom-20 z-10 rounded-xl border border-outline-variant/60 bg-surface-container-lowest p-4 shadow-md md:bottom-4 md:bg-card/95 md:backdrop-blur-sm">
+          <div className="sticky bottom-20 z-10 rounded-lg border border-outline-variant/60 bg-surface-container-lowest p-4 shadow-md md:bottom-4 md:bg-card/95 md:backdrop-blur-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="font-geist text-sm text-on-surface-variant">
                 {pendingCount > 0
@@ -536,10 +540,6 @@ export function PredictionsClient({
             </div>
           </div>
         )}
-
-        <div className="lg:hidden">
-          <ScoringRulesCard rules={scoringRules} collapsible />
-        </div>
       </div>
 
       <aside className="hidden w-full shrink-0 lg:block lg:w-72 xl:w-80">

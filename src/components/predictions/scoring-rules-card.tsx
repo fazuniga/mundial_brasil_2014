@@ -34,7 +34,7 @@ export function ScoringRulesCard({
   );
 
   const list = (
-    <ul className={cn("flex flex-col gap-2", compact ? "p-4" : "p-5")}>
+    <ul className={cn("flex flex-col gap-2", compact ? "p-3" : "p-4")}>
       {rules.map((rule) => (
         <li
           key={rule.id}

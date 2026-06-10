@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { MaterialIcon } from "@/components/material-icon";
+import { cn } from "@/lib/utils";
 import { TopScorerBet } from "@/components/predictions/top-scorer-bet";
 import { WorldCupWinnerBet } from "@/components/predictions/world-cup-winner-bet";
 import type { PlayerRow, ScoringRuleRow, TeamRow } from "@/lib/predictions-types";
@@ -35,14 +37,21 @@ export function SpecialBetsSection({
   winnerSaved,
   topScorerSaved,
 }: SpecialBetsSectionProps) {
+  const [open, setOpen] = useState(true);
   const winnerPoints = rulePoints(scoringRules, "tournament_winner", 15);
   const topScorerPlayerPoints = rulePoints(scoringRules, "top_scorer_player", 10);
   const topScorerGoalsPoints = rulePoints(scoringRules, "top_scorer_goals", 15);
 
   return (
     <section className="overflow-hidden rounded-xl border border-outline-variant/60 bg-card shadow-sm">
-      <div className="border-b border-outline-variant/50 bg-surface-container-lowest px-4 py-3">
-        <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center justify-between gap-3 border-b border-outline-variant/50 bg-surface-container-lowest px-4 py-3 text-left transition-colors hover:bg-surface-container-low/80"
+        aria-expanded={open}
+        aria-label={open ? "Ocultar Apuestas Especiales" : "Mostrar Apuestas Especiales"}
+      >
+        <div className="flex min-w-0 items-center gap-2">
           <MaterialIcon name="stars" className="text-xl text-accent" />
           <div>
             <h2 className="font-geist text-sm font-semibold text-on-surface">
@@ -53,32 +62,47 @@ export function SpecialBetsSection({
             </p>
           </div>
         </div>
-      </div>
-
-      <div className="flex flex-col gap-6 p-4">
-        <WorldCupWinnerBet
-          teams={teams}
-          draft={winnerDraft}
-          onDraftChange={onWinnerChange}
-          disabled={disabled}
-          isSaved={winnerSaved}
-          points={winnerPoints}
+        <MaterialIcon
+          name={open ? "expand_less" : "expand_more"}
+          className="shrink-0 text-xl text-on-surface-variant"
         />
+      </button>
 
-        <div className="border-t border-outline-variant/40 pt-6">
-          <TopScorerBet
-            players={players}
-            draft={topScorerDraft}
-            onDraftChange={onTopScorerChange}
+      {open ? (
+        <div className="flex flex-col gap-6 p-4">
+          <WorldCupWinnerBet
+            teams={teams}
+            draft={winnerDraft}
+            onDraftChange={onWinnerChange}
             disabled={disabled}
-            isSaved={topScorerSaved}
-            playerPoints={topScorerPlayerPoints}
-            goalsPoints={topScorerGoalsPoints}
+            isSaved={winnerSaved}
+            points={winnerPoints}
           />
-        </div>
-      </div>
 
-      <div className="border-t border-outline-variant/40 px-4 py-2">
+          <div className="border-t border-outline-variant/40 pt-6">
+            <TopScorerBet
+              players={players}
+              draft={topScorerDraft}
+              onDraftChange={onTopScorerChange}
+              disabled={disabled}
+              isSaved={topScorerSaved}
+              playerPoints={topScorerPlayerPoints}
+              goalsPoints={topScorerGoalsPoints}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      <div
+        className={cn(
+          "border-t border-outline-variant/40 px-4 py-2",
+          disabled
+            ? "bg-surface-container-low/50"
+            : winnerSaved && topScorerSaved
+              ? "bg-primary/10"
+              : "bg-surface-container-low/30",
+        )}
+      >
         {disabled ? (
           <p className="flex items-center gap-1 font-geist text-xs text-on-surface-variant">
             <MaterialIcon name="lock" className="text-sm" />

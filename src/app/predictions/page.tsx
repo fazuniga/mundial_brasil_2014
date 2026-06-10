@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { MaterialIcon } from "@/components/material-icon";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SiteHeader } from "@/components/site-header";
 import { PredictionsClient } from "@/components/predictions/predictions-client";
@@ -144,7 +145,7 @@ export default async function PredictionsPage() {
   return (
     <>
       <SiteHeader userEmail={user?.email} isAdmin={isAdmin} activeNav="matches" />
-      <main className="mx-auto flex w-full max-w-7xl flex-col gap-section-gap px-gutter-md pb-24 pt-[calc(4rem+2rem)] md:pb-8">
+      <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-24 md:pb-8">
         <header className="space-y-2">
           <p className="font-geist text-xs font-semibold uppercase tracking-widest text-accent">
             Apuestas
@@ -152,18 +153,24 @@ export default async function PredictionsPage() {
           <h1 className="font-headline text-2xl font-bold text-primary md:text-3xl">
             Ingresa tus pronósticos
           </h1>
-          <p className="font-geist max-w-2xl text-sm text-on-surface-variant">
-            Ingresa tus marcadores y apuestas adicionales en cada partido, y acumula puntos.
-            ¿Cuándo es el primer gol? Cuéntanos qué crees tú.
-          </p>
-          <p className="font-geist max-w-2xl text-sm text-on-surface-variant">
-            En Apuestas Especiales pronosticas al princpio del mundial qué país será
-            el campeón (por 15 puntos), el goleador del torneo (por 10 puntos) y
-            sus goles (por 15 puntos).
-          </p>
-          <p className="font-geist max-w-2xl text-sm text-on-surface-variant">
-            Sólo las fases habilitadas aceptan pronósticos, y sólo tienes hasta 60 minutos antes del inicio de cada partido para hacerlo.
-          </p>
+          <div className="flex flex-col gap-3">
+            <p className="font-geist max-w-2xl text-sm text-on-surface-variant">
+              Ingresa tus marcadores y apuestas adicionales en cada partido, y acumula puntos.
+              ¿Cuándo es el primer gol? Cuéntanos qué crees tú.
+            </p>
+            <p className="font-geist max-w-2xl text-sm text-on-surface-variant">
+              En <b>Apuestas Especiales</b> pronosticas al principio del mundial qué país será
+              el campeón (por 15 puntos), el goleador del torneo (por 10 puntos) y
+              sus goles (por 15 puntos).
+            </p>
+            <div className="flex items-center max-w-2xl gap-3 rounded-md bg-gray-50 p-3">
+              <MaterialIcon name="lightbulb" className="mt-0.5 shrink-0 text-xl text-accent" />
+              <p className="font-geist text-sm text-black">
+                Sólo las fases habilitadas aceptan pronósticos, y tienes hasta <b>60 minutos</b>{" "}
+                antes del inicio de cada partido para hacerlo.
+              </p>
+            </div>
+          </div>
         </header>
 
         <Suspense

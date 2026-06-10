@@ -64,7 +64,7 @@ export function MatchPredictionCard({
   return (
     <article
       className={cn(
-        "rounded-xl border border-outline-variant/50 bg-surface-container-lowest p-4 shadow-sm",
+        "rounded-lg border border-outline-variant/50 bg-surface-container-lowest p-4 shadow-sm",
         isLocked && "opacity-95",
       )}
     >
