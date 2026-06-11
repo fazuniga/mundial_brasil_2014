@@ -40,7 +40,7 @@ export default async function PredictionsPage() {
       )
       .order("match_date")
       .order("match_time"),
-    supabase.from("scoring_rules").select("id, rule_key, points").order("points", { ascending: false }),
+    supabase.from("scoring_rules").select("id, rule_key, points").order("scoring_rules_order"),
     supabase
       .from("v_players")
       .select(

@@ -49,6 +49,7 @@ export function MatchResultsList({
                 score={score}
                 goals={goals.length > 0 ? goals : undefined}
                 showPredictLink={false}
+                showVenue
               />
             );
           })}

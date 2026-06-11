@@ -52,6 +52,7 @@ type FixtureRowCardProps = {
   score?: { home: number; away: number };
   goals?: MatchGoalPublicRow[];
   showPredictLink: boolean;
+  showVenue?: boolean;
 };
 
 export function FixtureRowCard({
@@ -59,6 +60,7 @@ export function FixtureRowCard({
   score,
   goals,
   showPredictLink,
+  showVenue = false,
 }: FixtureRowCardProps) {
   const { dateShort, timeShort } = formatFixtureDateTime(
     fixture.match_date,
@@ -78,6 +80,12 @@ export function FixtureRowCard({
           {meta ? (
             <p className="font-geist mt-1 truncate text-[11px] text-on-surface-variant">
               {meta}
+            </p>
+          ) : null}
+          {showVenue && (fixture.city || fixture.stadium) ? (
+            <p className="font-geist mt-1 truncate text-[11px] text-on-surface-variant">
+              {fixture.city}
+              {fixture.stadium ? ` · ${fixture.stadium}` : ""}
             </p>
           ) : null}
         </div>

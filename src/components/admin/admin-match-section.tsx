@@ -3,7 +3,10 @@
 import { Fragment, useState, type ComponentProps } from "react";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import { MaterialIcon } from "@/components/material-icon";
-import { AdminMatchGoals } from "@/components/admin/admin-match-goals";
+import {
+  AdminDerivedFirstGoal,
+  AdminMatchGoals,
+} from "@/components/admin/admin-match-goals";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AdminFixtureRow, MatchGoalRow, MatchResultDraft } from "@/lib/admin-types";
@@ -198,12 +201,12 @@ function AdminMatchCard({
           </div>
           <div className="text-right">
             {isSaved ? (
-              <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 font-geist text-sm font-medium text-primary">
+              <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 font-geist text-xs font-medium text-primary">
                 <MaterialIcon name="check_circle" className="text-base" />
                 Con resultado
               </span>
             ) : (
-              <span className="border border-border/40 inline-flex rounded-md bg-slate-100 px-2 py-0.5 font-geist text-sm font-medium text-slate-700">
+              <span className="border border-border/40 inline-flex rounded-md bg-slate-100 px-2 py-0.5 font-geist text-xs font-medium text-slate-700">
                 Pendiente
               </span>
             )}
@@ -335,24 +338,26 @@ function AdminMatchForm({
         fixture={fixture}
         goals={goals}
         players={players}
-        derivedFirstGoal={derivedFirstGoal}
         saving={saving}
         onAddGoal={onAddGoal}
         onDeleteGoal={onDeleteGoal}
       />
 
-      <div className="rounded-xl border border-border/50 bg-white px-4 py-3">
-        <p className="font-geist text-xs font-medium uppercase tracking-wide text-on-surface-variant">
-          Marcador 90 min (automático)
-        </p>
-        <div className="mt-2 flex items-center gap-2">
-          <span className={cn(scoreInputClass, "flex items-center justify-center")}>
-            {derivedRegulation.goalsHome}
-          </span>
-          <span className="font-headline text-lg font-bold text-slate-500">–</span>
-          <span className={cn(scoreInputClass, "flex items-center justify-center")}>
-            {derivedRegulation.goalsAway}
-          </span>
+      <div className="grid gap-2 md:grid-cols-2 md:[&>*]:h-full">
+        <AdminDerivedFirstGoal derivedFirstGoal={derivedFirstGoal} />
+        <div className="flex h-full min-w-0 flex-col rounded-xl border border-border/50 bg-white px-4 py-3">
+          <p className="font-geist text-sm font-medium text-on-surface-variant">
+            Marcador 90 min (automático)
+          </p>
+          <div className="mt-2 flex flex-1 items-center gap-2">
+            <span className={cn(scoreInputClass, "flex items-center justify-center")}>
+              {derivedRegulation.goalsHome}
+            </span>
+            <span className="font-headline text-lg font-bold text-slate-500">–</span>
+            <span className={cn(scoreInputClass, "flex items-center justify-center")}>
+              {derivedRegulation.goalsAway}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -405,8 +410,8 @@ function AdminMatchForm({
         </div>
       ) : null}
 
-      <div className="flex justify-end">
-        <Button type="button" onClick={onSave} disabled={saving || !dirty}>
+      <div className="flex justify-center">
+        <Button type="button" onClick={onSave} disabled={saving || !dirty} className="w-full max-w-xs bg-white! hover:bg-primary-hover! hover:text-white!">
           {saving ? "Guardando…" : "Guardar partido"}
         </Button>
       </div>
@@ -611,12 +616,12 @@ export function AdminMatchSection({
 
                     <td className="text-center px-3 py-4 align-middle">
                       {isSaved ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 font-geist text-sm font-medium text-primary">
-                          <MaterialIcon name="check_circle" className="text-base" />
+                        <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 font-geist text-xs font-medium text-primary">
+                          <MaterialIcon name="check_circle" className="text-xs" />
                           Con resultado
                         </span>
                       ) : (
-                        <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 font-geist text-sm font-medium text-slate-700">
+                        <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 font-geist text-xs font-medium text-slate-700">
                           Pendiente
                         </span>
                       )}

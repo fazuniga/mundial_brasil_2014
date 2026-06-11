@@ -39,41 +39,244 @@ function paymentStatusLabel(phase: string, isPaid: boolean): string {
 function PaymentStatusIcon({
   phase,
   isPaid,
+  size = "default",
 }: {
   phase: string;
   isPaid: boolean;
+  size?: "default" | "tiny";
 }) {
   const label = paymentStatusLabel(phase, isPaid);
   return (
     <span title={label} aria-label={label} className="inline-flex shrink-0">
       <MaterialIcon
         name={isPaid ? "paid" : "money_off"}
-        className={
-          isPaid
-            ? "text-sm text-primary sm:text-base"
-            : "text-sm text-accent sm:text-base"
-        }
+        className={cn(
+          isPaid ? "text-primary" : "text-accent",
+          size === "tiny" ? "text-[16px]! leading-none" : "text-sm",
+        )}
       />
     </span>
   );
 }
 
-function buildGridTemplateColumns(showPayment: boolean, showBreakdown: boolean): string {
-  const cols = ["2.5rem", "minmax(0,1fr)"];
-  if (showPayment) cols.push("3.5rem", "3.25rem");
-  cols.push("3rem", "3.25rem");
-  if (showBreakdown) {
-    cols.push("3rem", "3rem", "3.25rem", "3.5rem", "3.5rem");
-  }
-  return cols.join(" ");
+function PlayerPaymentIcons({ row }: { row: PoolRankingRow }) {
+  if (row.id_pool == null) return null;
+
+  return (
+    <div className="mt-0.5 flex items-center gap-1.5">
+      <PaymentStatusIcon
+        phase="Fase de Grupos"
+        isPaid={row.is_paid_group_phase}
+        size="tiny"
+      />
+      <PaymentStatusIcon
+        phase="Fases eliminatorias"
+        isPaid={row.is_paid_knockout}
+        size="tiny"
+      />
+    </div>
+  );
 }
 
-const cellPad = "px-2 py-2 sm:px-3 sm:py-3";
-const compactCellPad = "px-1 py-2 sm:px-1.5 sm:py-3";
+function PlayerCell({
+  row,
+  showPayment,
+}: {
+  row: PoolRankingRow;
+  showPayment: boolean;
+}) {
+  return (
+    <div role="cell" className="min-w-0 px-2 py-2 sm:px-3 sm:py-3">
+      <p className="truncate text-sm font-medium text-on-surface">
+        {row.display_name || row.username}
+      </p>
+      {showPayment ? <PlayerPaymentIcons row={row} /> : null}
+    </div>
+  );
+}
+
+function RankCell({ row }: { row: PoolRankingRow }) {
+  const podium = isPodiumPosition(row.rank_position);
+  const podiumLabel = rankAriaLabel(row.rank_position);
+
+  return (
+    <div
+      role="cell"
+      className="px-1.5 py-2 text-center tabular-nums sm:px-2 sm:py-3"
+    >
+      {podium ? (
+        <span
+          title={podiumLabel ?? undefined}
+          aria-label={podiumLabel ?? undefined}
+          className={cn(
+            "inline-flex size-6 items-center justify-center rounded-full text-xs font-bold sm:size-7 sm:text-sm",
+            rankBadgeClassName(row.rank_position),
+          )}
+        >
+          {row.rank_position}
+        </span>
+      ) : (
+        <span className="font-semibold text-on-surface">{row.rank_position}</span>
+      )}
+    </div>
+  );
+}
+
+function PointsCell({ row }: { row: PoolRankingRow }) {
+  return (
+    <div role="cell" className="px-2 py-2 text-center sm:px-3 sm:py-3">
+      <span className="font-headline text-base font-bold tabular-nums text-primary sm:text-lg">
+        {row.total_points}
+      </span>
+    </div>
+  );
+}
+
+function BetsCell({ row }: { row: PoolRankingRow }) {
+  return (
+    <div
+      role="cell"
+      className="px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3"
+    >
+      {row.bets_placed}
+    </div>
+  );
+}
+
+function gridColumns(variant: "compact" | "full"): string {
+  if (variant === "compact") {
+    return "2.25rem minmax(0,12rem) minmax(3rem, 1fr) minmax(3.75rem, 1fr)";
+  }
+  return [
+    "2.5rem",
+    "minmax(0,12rem)",
+    "3.25rem",
+    "4rem",
+    "minmax(3.75rem,1fr)",
+    "minmax(3.5rem,1fr)",
+    "minmax(4rem,1fr)",
+    "minmax(4rem,1fr)",
+    "minmax(4rem,1fr)",
+  ].join(" ");
+}
+
+type RankingRowProps = {
+  row: PoolRankingRow;
+  currentUserId?: string | null;
+  showPayment: boolean;
+  variant: "compact" | "full";
+};
+
+function RankingRow({
+  row,
+  currentUserId,
+  showPayment,
+  variant,
+}: RankingRowProps) {
+  const podium = isPodiumPosition(row.rank_position);
+  const isCurrentUser = currentUserId != null && row.owner_id === currentUserId;
+
+  return (
+    <div
+      role="row"
+      className={cn(
+        "grid items-center gap-x-2 border-b border-outline-variant/30",
+        rankRowClassName(row.rank_position),
+        isCurrentUser && !podium && "border-outline-variant/40 bg-primary-container/15",
+        isCurrentUser && podium && "ring-inset ring-primary/35",
+      )}
+      style={{ gridTemplateColumns: gridColumns(variant) }}
+    >
+      <RankCell row={row} />
+      <PlayerCell row={row} showPayment={showPayment} />
+      <BetsCell row={row} />
+      <PointsCell row={row} />
+      {variant === "full" ? (
+        <>
+          <div role="cell" className="px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3">
+            {row.exact_hits}
+          </div>
+          <div role="cell" className="px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3">
+            {row.goal_diff_hits}
+          </div>
+          <div role="cell" className="px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3">
+            {row.winner_hits}
+          </div>
+          <div role="cell" className="px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3">
+            {row.side_bet_points}
+          </div>
+          <div role="cell" className="px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3">
+            {row.tournament_points}
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
 const headerClass =
-  "border-b border-outline-variant/50 bg-surface-container-lowest text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant sm:text-xs";
-const breakdownHeaderClass = "hidden text-right sm:block";
-const breakdownCellClass = "hidden text-right tabular-nums sm:block";
+  "border-b border-outline-variant/50 bg-surface-container-lowest text-[10px]! font-semibold uppercase text-on-surface-variant";
+
+function RankingsHeader({ variant }: { variant: "compact" | "full" }) {
+  const compactPad = "p-2"
+  const statPad = "p-2 text-center"
+
+  return (
+    <div
+      role="row"
+      className={cn("grid items-center gap-x-1.5", headerClass)}
+      style={{ gridTemplateColumns: gridColumns(variant) }}
+    >
+      <div role="columnheader" className={`${compactPad} text-center`}>
+        #
+      </div>
+      <div role="columnheader" className={compactPad}>
+        Jugador
+      </div>
+      <div
+        role="columnheader"
+        className={cn(statPad, "whitespace-nowrap")}
+        title="Partidos con pronóstico"
+      >
+        Pron.
+      </div>
+      <div role="columnheader" className={cn(statPad, "whitespace-nowrap")}>
+        Pts
+      </div>
+      {variant === "full" ? (
+        <>
+          <div
+            role="columnheader"
+            className={cn(compactPad, "text-center")}
+            title={scoringRuleLabel("exact_score")}
+          >
+            Exactos
+          </div>
+          <div
+            role="columnheader"
+            className={cn(compactPad, "text-center")}
+            title={scoringRuleLabel("goal_difference")}
+          >
+            Dif.
+          </div>
+          <div
+            role="columnheader"
+            className={cn(compactPad, "text-center")}
+            title={scoringRuleLabel("winner")}
+          >
+            Ganador
+          </div>
+          <div role="columnheader" className={cn(compactPad, "text-center")}>
+            Apuestas
+          </div>
+          <div role="columnheader" className={cn(compactPad, "text-center")}>
+            Torneo
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+}
 
 export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProps) {
   if (rows.length === 0) {
@@ -97,190 +300,45 @@ export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProp
       r.tournament_points > 0,
   );
 
-  const gridStyle = { gridTemplateColumns: buildGridTemplateColumns(showPayment, showBreakdown) };
+  const tableClass = "font-geist text-xs";
 
   return (
     <div className="overflow-x-auto rounded-lg border border-outline-variant/60 bg-card shadow-sm">
       <div
-        className={cn(
-          "font-geist text-xs sm:text-sm",
-          showBreakdown && "min-w-lg",
-        )}
+        className={cn(tableClass, showBreakdown ? "sm:hidden" : undefined)}
         role="table"
         aria-label="Clasificación de jugadores"
       >
-        <div
-          role="row"
-          className={cn("grid items-center gap-x-1", headerClass)}
-          style={gridStyle}
-        >
-          <div role="columnheader" className={`${compactCellPad} text-center`}>
-            #
-          </div>
-          <div role="columnheader" className={cellPad}>
-            Jugador
-          </div>
-          {showPayment ? (
-            <>
-              <div
-                role="columnheader"
-                className={`${compactCellPad} whitespace-nowrap text-center`}
-              >
-                Grupos
-              </div>
-              <div
-                role="columnheader"
-                className={`${compactCellPad} whitespace-nowrap text-center`}
-              >
-                Resto
-              </div>
-            </>
-          ) : null}
-          <div
-            role="columnheader"
-            className={`${compactCellPad} whitespace-nowrap text-center`}
-            title="Partidos con pronóstico"
-          >
-            Pron.
-          </div>
-          <div role="columnheader" className={`${compactCellPad} whitespace-nowrap text-center`}>
-            Pts
-          </div>
-          {showBreakdown ? (
-            <>
-              <div
-                role="columnheader"
-                className={cn(cellPad, breakdownHeaderClass)}
-                title={scoringRuleLabel("exact_score")}
-              >
-                Exactos
-              </div>
-              <div
-                role="columnheader"
-                className={cn(cellPad, breakdownHeaderClass, "md:block")}
-                title={scoringRuleLabel("goal_difference")}
-              >
-                Dif.
-              </div>
-              <div
-                role="columnheader"
-                className={cn(cellPad, breakdownHeaderClass, "lg:block")}
-                title={scoringRuleLabel("winner")}
-              >
-                Ganador
-              </div>
-              <div
-                role="columnheader"
-                className={cn(cellPad, breakdownHeaderClass, "xl:block")}
-              >
-                Apuestas
-              </div>
-              <div
-                role="columnheader"
-                className={cn(cellPad, breakdownHeaderClass, "xl:block")}
-              >
-                Torneo
-              </div>
-            </>
-          ) : null}
-        </div>
-
-        {rows.map((row) => {
-          const podium = isPodiumPosition(row.rank_position);
-          const podiumLabel = rankAriaLabel(row.rank_position);
-          const isCurrentUser = currentUserId != null && row.owner_id === currentUserId;
-
-          return (
-            <div
-              key={row.owner_id}
-              role="row"
-              className={cn(
-                "grid items-center gap-x-1 border-b border-outline-variant/30",
-                rankRowClassName(row.rank_position),
-                isCurrentUser &&
-                  !podium &&
-                  "border-outline-variant/40 bg-primary-container/15",
-                isCurrentUser && podium && "ring-inset ring-primary/35",
-              )}
-              style={gridStyle}
-            >
-              <div role="cell" className={`${compactCellPad} text-center tabular-nums`}>
-                {podium ? (
-                  <span
-                    title={podiumLabel ?? undefined}
-                    aria-label={podiumLabel ?? undefined}
-                    className={cn(
-                      "inline-flex size-6 items-center justify-center rounded-full text-xs font-bold sm:size-7 sm:text-sm",
-                      rankBadgeClassName(row.rank_position),
-                    )}
-                  >
-                    {row.rank_position}
-                  </span>
-                ) : (
-                  <span className="font-semibold text-on-surface">{row.rank_position}</span>
-                )}
-              </div>
-              <div role="cell" className={`${cellPad} min-w-0`}>
-                <p className="truncate font-medium text-on-surface">
-                  {row.display_name || row.username}
-                </p>
-                {row.username ? (
-                  <p className="hidden truncate font-mono text-xs text-on-surface-variant sm:block">
-                    @{row.username}
-                  </p>
-                ) : null}
-              </div>
-              {showPayment ? (
-                <>
-                  <div role="cell" className={`${compactCellPad} text-center`}>
-                    {row.id_pool != null ? (
-                      <PaymentStatusIcon
-                        phase="Fase de Grupos"
-                        isPaid={row.is_paid_group_phase}
-                      />
-                    ) : null}
-                  </div>
-                  <div role="cell" className={`${compactCellPad} text-center`}>
-                    {row.id_pool != null ? (
-                      <PaymentStatusIcon
-                        phase="Fases eliminatorias"
-                        isPaid={row.is_paid_knockout}
-                      />
-                    ) : null}
-                  </div>
-                </>
-              ) : null}
-              <div role="cell" className={`${compactCellPad} text-center tabular-nums`}>
-                {row.bets_placed}
-              </div>
-              <div role="cell" className={`${compactCellPad} text-center`}>
-                <span className="font-headline text-base font-bold tabular-nums text-primary sm:text-lg">
-                  {row.total_points}
-                </span>
-              </div>
-              {showBreakdown ? (
-                <>
-                  <div role="cell" className={cn(cellPad, breakdownCellClass)}>
-                    {row.exact_hits}
-                  </div>
-                  <div role="cell" className={cn(cellPad, breakdownCellClass, "md:block")}>
-                    {row.goal_diff_hits}
-                  </div>
-                  <div role="cell" className={cn(cellPad, breakdownCellClass, "lg:block")}>
-                    {row.winner_hits}
-                  </div>
-                  <div role="cell" className={cn(cellPad, breakdownCellClass, "xl:block")}>
-                    {row.side_bet_points}
-                  </div>
-                  <div role="cell" className={cn(cellPad, breakdownCellClass, "xl:block")}>
-                    {row.tournament_points}
-                  </div>
-                </>
-              ) : null}
-            </div>
-          );
-        })}
+        <RankingsHeader variant="compact" />
+        {rows.map((row) => (
+          <RankingRow
+            key={row.owner_id}
+            row={row}
+            currentUserId={currentUserId}
+            showPayment={showPayment}
+            variant="compact"
+          />
+        ))}
       </div>
+
+      {showBreakdown ? (
+        <div
+          className={cn(tableClass, "hidden sm:block")}
+          role="table"
+          aria-label="Clasificación de jugadores"
+        >
+          <RankingsHeader variant="full" />
+          {rows.map((row) => (
+            <RankingRow
+              key={row.owner_id}
+              row={row}
+              currentUserId={currentUserId}
+              showPayment={showPayment}
+              variant="full"
+            />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

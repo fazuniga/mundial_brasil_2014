@@ -1,22 +1,60 @@
 "use client";
 
 import { useState } from "react";
-import { MaterialIcon } from "@/components/material-icon";
 import { PlayerSearchSelect } from "@/components/predictions/player-search-select";
+import { TeamFlag } from "@/components/team-flag";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { MatchGoalRow } from "@/lib/admin-types";
-import { parseGoalMinute, playersForMatch } from "@/lib/admin-utils";
+import {
+  type DerivedFirstGoal,
+  parseGoalMinute,
+  playersForMatch,
+} from "@/lib/admin-utils";
 import type { AdminFixtureRow } from "@/lib/admin-types";
 import type { PlayerRow } from "@/lib/predictions-types";
 import { cn } from "@/lib/utils";
+
+export type { DerivedFirstGoal };
+
+type AdminDerivedFirstGoalProps = {
+  derivedFirstGoal: DerivedFirstGoal | null;
+};
+
+export function AdminDerivedFirstGoal({
+  derivedFirstGoal,
+}: AdminDerivedFirstGoalProps) {
+  return (
+    <div className="flex h-full min-w-0 flex-col rounded-xl border border-border/40 bg-white px-4 py-3">
+      <p className="font-geist text-sm font-medium text-on-surface-variant">
+        Primer gol del partido (automático)
+      </p>
+      {derivedFirstGoal ? (
+        <p className="mt-2 flex flex-1 items-center gap-2 font-geist text-base text-on-surface">
+          {derivedFirstGoal.teamCode ? (
+            <TeamFlag
+              code={derivedFirstGoal.teamCode}
+              country={derivedFirstGoal.teamCountry}
+            />
+          ) : null}
+          <span>
+            {derivedFirstGoal.playerName} · minuto {derivedFirstGoal.minute}
+          </span>
+        </p>
+      ) : (
+        <p className="mt-2 flex flex-1 items-center font-geist text-base text-on-surface-variant">
+          Sin primer gol (sin goles o solo autogoles).
+        </p>
+      )}
+    </div>
+  );
+}
 
 type AdminMatchGoalsProps = {
   fixture: AdminFixtureRow;
   goals: MatchGoalRow[];
   players: PlayerRow[];
-  derivedFirstGoal: { minute: number; playerId: number; playerName: string } | null;
   saving: boolean;
   onAddGoal: (payload: {
     id_player: number;
@@ -33,7 +71,6 @@ export function AdminMatchGoals({
   fixture,
   goals,
   players,
-  derivedFirstGoal,
   saving,
   onAddGoal,
   onDeleteGoal,
@@ -50,6 +87,7 @@ export function AdminMatchGoals({
     fixture.home_team_id,
     fixture.away_team_id,
   );
+  const playerById = new Map(players.map((player) => [player.id_player, player]));
 
   async function handleAdd() {
     const parsedMinute = parseGoalMinute(minute);
@@ -106,12 +144,20 @@ export function AdminMatchGoals({
 
       {sortedGoals.length > 0 ? (
         <ul className="divide-y divide-border/40 rounded-xl border border-border/50 bg-white">
-          {sortedGoals.map((goal) => (
+          {sortedGoals.map((goal) => {
+            const player = playerById.get(goal.id_player);
+            return (
             <li
               key={goal.id_goal}
               className="flex items-center justify-between gap-3 px-4 py-1.5"
             >
-              <div className="min-w-0 flex items-center gap-1">
+              <div className="flex min-w-0 items-center gap-2">
+                {player?.team_code ? (
+                  <TeamFlag
+                    code={player.team_code}
+                    country={player.team_country}
+                  />
+                ) : null}
                 <p className="font-geist text-base text-on-surface">
                   {goal.player_name ?? `Jugador ${goal.id_player}`}
                   {goal.is_own_goal ? (
@@ -134,7 +180,8 @@ export function AdminMatchGoals({
                 {deletingId === goal.id_goal ? "…" : "Eliminar"}
               </Button>
             </li>
-          ))}
+            );
+          })}
         </ul>
       ) : (
         <p className="font-geist text-sm text-on-surface-variant">Sin goles registrados.</p>
@@ -199,22 +246,6 @@ export function AdminMatchGoals({
       {localError ? (
         <p className="font-geist text-sm text-destructive">{localError}</p>
       ) : null}
-
-      <div className="rounded-xl border border-border/40 bg-slate-50 px-5 py-4">
-        <p className="font-geist text-sm font-medium text-on-surface-variant">
-          Primer gol del partido (automático)
-        </p>
-        {derivedFirstGoal ? (
-          <p className="mt-2 font-geist text-base text-on-surface flex items-center">
-            <MaterialIcon name="sports_soccer" className="mr-2 inline text-lg text-primary" />
-            {derivedFirstGoal.playerName} · minuto {derivedFirstGoal.minute}
-          </p>
-        ) : (
-          <p className="mt-2 font-geist text-base text-on-surface-variant">
-            Sin primer gol (sin goles o solo autogoles).
-          </p>
-        )}
-      </div>
     </div>
   );
 }

@@ -197,25 +197,34 @@ export function isAdminMatchDirty(
   );
 }
 
+export type DerivedFirstGoal = {
+  minute: number;
+  playerId: number;
+  playerName: string;
+  teamCode: string;
+  teamCountry: string;
+};
+
 export function deriveFirstGoalFromGoals(
   goals: MatchGoalRow[],
   players: PlayerRow[],
-): { minute: number; playerId: number; playerName: string } | null {
+): DerivedFirstGoal | null {
   const eligible = goals
     .filter((g) => !g.is_own_goal)
     .sort((a, b) => a.minute - b.minute || a.id_goal - b.id_goal);
   const first = eligible[0];
   if (!first) return null;
 
+  const player = players.find((p) => p.id_player === first.id_player);
   const playerName =
-    first.player_name ??
-    players.find((p) => p.id_player === first.id_player)?.name ??
-    `Jugador ${first.id_player}`;
+    first.player_name ?? player?.name ?? `Jugador ${first.id_player}`;
 
   return {
     minute: first.minute,
     playerId: first.id_player,
     playerName,
+    teamCode: player?.team_code ?? "",
+    teamCountry: player?.team_country ?? "",
   };
 }
 

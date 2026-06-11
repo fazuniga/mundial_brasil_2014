@@ -11,7 +11,7 @@ const RULE_LABELS: Record<string, string> = {
 
 const RULE_HELPERS: Record<string, string> = {
   extra_time: "Solo fases eliminatorias",
-  tournament_winner: "Selecciona el país campeón del Mundial 2026",
+  tournament_winner: "País campeón del Mundial 2026",
   top_scorer_player: "Bota de oro compartida: cualquier jugador empatado en el máximo cuenta",
   top_scorer_goals: "Debe coincidir con el total del líder (empates incluidos)",
 };
