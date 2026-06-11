@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { MaterialIcon } from "@/components/material-icon";
 import { MATCH_TIMEZONE_ABBR } from "@/lib/match-timezone";
+import { MatchGoalsDetail } from "@/components/match-goals-detail";
+import type { MatchGoalPublicRow } from "@/lib/match-goals-display";
 import type { FixtureRow } from "@/lib/predictions-types";
 import { formatFixtureDateTime } from "@/lib/predictions-utils";
 import { teamFlagUrl, teamInitials } from "@/lib/team-display";
@@ -48,12 +50,14 @@ function TeamBadge({
 type FixtureRowCardProps = {
   fixture: FixtureRow;
   score?: { home: number; away: number };
+  goals?: MatchGoalPublicRow[];
   showPredictLink: boolean;
 };
 
 export function FixtureRowCard({
   fixture,
   score,
+  goals,
   showPredictLink,
 }: FixtureRowCardProps) {
   const { dateShort, timeShort } = formatFixtureDateTime(
@@ -66,13 +70,10 @@ export function FixtureRowCard({
 
   return (
     <li className="border-b border-outline-variant/40 last:border-b-0">
-      <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-4">
+      <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:gap-4">
         <div className="min-w-0 shrink-0 sm:w-36">
           <p className="font-geist text-xs font-medium capitalize text-on-surface">
-            {dateShort}
-          </p>
-          <p className="font-geist text-xs text-on-surface-variant">
-            {timeShort} {MATCH_TIMEZONE_ABBR}
+            {dateShort} · {timeShort} {MATCH_TIMEZONE_ABBR}
           </p>
           {meta ? (
             <p className="font-geist mt-1 truncate text-[11px] text-on-surface-variant">
@@ -81,30 +82,40 @@ export function FixtureRowCard({
           ) : null}
         </div>
 
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <TeamBadge
-            country={fixture.home_country}
-            code={fixture.home_code}
-            align="right"
-          />
-          <div className="flex shrink-0 flex-col items-center px-1">
-            {score ? (
-              <p className="font-headline text-xl font-bold tabular-nums text-primary">
-                {score.home}
-                <span className="mx-1 text-on-surface-variant">-</span>
-                {score.away}
-              </p>
-            ) : (
-              <span className="font-geist text-xs font-semibold text-on-surface-variant">
-                vs
-              </span>
-            )}
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <TeamBadge
+              country={fixture.home_country}
+              code={fixture.home_code}
+              align="right"
+            />
+            <div className="flex w-14 shrink-0 flex-col items-center px-1 sm:w-16">
+              {score ? (
+                <p className="font-headline text-xl font-bold tabular-nums text-primary">
+                  {score.home}
+                  <span className="mx-1 text-on-surface-variant">-</span>
+                  {score.away}
+                </p>
+              ) : (
+                <span className="font-geist text-xs font-semibold text-on-surface-variant">
+                  vs
+                </span>
+              )}
+            </div>
+            <TeamBadge
+              country={fixture.away_country}
+              code={fixture.away_code}
+              align="left"
+            />
           </div>
-          <TeamBadge
-            country={fixture.away_country}
-            code={fixture.away_code}
-            align="left"
-          />
+
+          {goals && goals.length > 0 ? (
+            <MatchGoalsDetail
+              goals={goals}
+              homeCode={fixture.home_code}
+              awayCode={fixture.away_code}
+            />
+          ) : null}
         </div>
 
         {showPredictLink && fixture.predictions_open ? (

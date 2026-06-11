@@ -126,6 +126,77 @@ export function matchDraftsAreEqual(a: MatchResultDraft, b: MatchResultDraft): b
   );
 }
 
+export type DerivedRegulationScore = {
+  goalsHome: number;
+  goalsAway: number;
+};
+
+export function deriveScoreFromGoals(
+  goals: MatchGoalRow[],
+  homeTeamId: number,
+  awayTeamId: number,
+  players: PlayerRow[],
+): DerivedRegulationScore {
+  const teamByPlayer = new Map(players.map((player) => [player.id_player, player.id_team]));
+  let goalsHome = 0;
+  let goalsAway = 0;
+
+  for (const goal of goals) {
+    const scorerTeam = teamByPlayer.get(goal.id_player);
+    if (scorerTeam == null) continue;
+
+    if (goal.is_own_goal) {
+      if (scorerTeam === homeTeamId) goalsAway += 1;
+      else if (scorerTeam === awayTeamId) goalsHome += 1;
+    } else if (scorerTeam === homeTeamId) {
+      goalsHome += 1;
+    } else if (scorerTeam === awayTeamId) {
+      goalsAway += 1;
+    }
+  }
+
+  return { goalsHome, goalsAway };
+}
+
+export function regulationScoreToDraft(score: DerivedRegulationScore): Pick<
+  MatchResultDraft,
+  "goalsHome" | "goalsAway"
+> {
+  return {
+    goalsHome: score.goalsHome.toString(),
+    goalsAway: score.goalsAway.toString(),
+  };
+}
+
+export function matchGoalsAreEqual(a: MatchGoalRow[], b: MatchGoalRow[]): boolean {
+  if (a.length !== b.length) return false;
+
+  const sortGoals = (goals: MatchGoalRow[]) =>
+    [...goals].sort((left, right) => left.id_goal - right.id_goal);
+
+  const sortedA = sortGoals(a);
+  const sortedB = sortGoals(b);
+
+  return sortedA.every(
+    (goal, index) =>
+      goal.id_goal === sortedB[index].id_goal &&
+      goal.id_player === sortedB[index].id_player &&
+      goal.minute === sortedB[index].minute &&
+      goal.is_own_goal === sortedB[index].is_own_goal,
+  );
+}
+
+export function isAdminMatchDirty(
+  draft: MatchResultDraft,
+  baseline: MatchResultDraft,
+  goals: MatchGoalRow[],
+  baselineGoals: MatchGoalRow[],
+): boolean {
+  return (
+    !matchDraftsAreEqual(draft, baseline) || !matchGoalsAreEqual(goals, baselineGoals)
+  );
+}
+
 export function deriveFirstGoalFromGoals(
   goals: MatchGoalRow[],
   players: PlayerRow[],
@@ -180,35 +251,73 @@ function parseOptionalSmallint(value: string): number | null {
 export function parseMatchResultPayload(
   idMatch: number,
   draft: MatchResultDraft,
+  regulationScore: DerivedRegulationScore,
+  firstGoal: { minute: number; playerId: number } | null,
 ): {
   payload: Record<string, unknown>;
   error: string | null;
 } {
-  const goalsHome = parseOptionalSmallint(draft.goalsHome);
-  const goalsAway = parseOptionalSmallint(draft.goalsAway);
+  const goalsHomeEt = parseOptionalSmallint(draft.goalsHomeEt);
+  const goalsAwayEt = parseOptionalSmallint(draft.goalsAwayEt);
+  const pensHome = parseOptionalSmallint(draft.pensHome);
+  const pensAway = parseOptionalSmallint(draft.pensAway);
 
-  if (draft.goalsHome.trim() !== "" && goalsHome === null) {
-    return { payload: {}, error: "Marcador local inválido." };
+  if (draft.goalsHomeEt.trim() !== "" && goalsHomeEt === null) {
+    return { payload: {}, error: "Marcador local en prórroga inválido." };
   }
-  if (draft.goalsAway.trim() !== "" && goalsAway === null) {
-    return { payload: {}, error: "Marcador visitante inválido." };
+  if (draft.goalsAwayEt.trim() !== "" && goalsAwayEt === null) {
+    return { payload: {}, error: "Marcador visitante en prórroga inválido." };
   }
-  if (goalsHome === null || goalsAway === null) {
+  if (draft.pensHome.trim() !== "" && pensHome === null) {
+    return { payload: {}, error: "Penales local inválidos." };
+  }
+  if (draft.pensAway.trim() !== "" && pensAway === null) {
+    return { payload: {}, error: "Penales visitante inválidos." };
+  }
+
+  if (
+    (pensHome != null || pensAway != null) &&
+    (pensHome == null || pensAway == null)
+  ) {
     return {
       payload: {},
-      error: "Indica goles local y visitante (90 min) para guardar el resultado.",
+      error: "Indica penales local y visitante.",
+    };
+  }
+
+  if (
+    goalsHomeEt != null &&
+    goalsAwayEt != null &&
+    goalsHomeEt < regulationScore.goalsHome
+  ) {
+    return {
+      payload: {},
+      error: "Goles en prórroga (total) no pueden ser menores que el marcador de 90 minutos (local).",
+    };
+  }
+
+  if (
+    goalsHomeEt != null &&
+    goalsAwayEt != null &&
+    goalsAwayEt < regulationScore.goalsAway
+  ) {
+    return {
+      payload: {},
+      error: "Goles en prórroga (total) no pueden ser menores que el marcador de 90 minutos (visitante).",
     };
   }
 
   return {
     payload: {
       id_match: idMatch,
-      goals_home: goalsHome,
-      goals_away: goalsAway,
-      goals_home_et: parseOptionalSmallint(draft.goalsHomeEt),
-      goals_away_et: parseOptionalSmallint(draft.goalsAwayEt),
-      pens_home: parseOptionalSmallint(draft.pensHome),
-      pens_away: parseOptionalSmallint(draft.pensAway),
+      goals_home: regulationScore.goalsHome,
+      goals_away: regulationScore.goalsAway,
+      goals_home_et: goalsHomeEt,
+      goals_away_et: goalsAwayEt,
+      pens_home: pensHome,
+      pens_away: pensAway,
+      first_goal_minute: firstGoal?.minute ?? null,
+      first_goal_player_id: firstGoal?.playerId ?? null,
     },
     error: null,
   };

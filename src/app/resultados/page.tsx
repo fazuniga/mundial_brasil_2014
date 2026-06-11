@@ -11,6 +11,7 @@ import {
   type GroupStandingRow,
 } from "@/lib/group-standings";
 import { buildResultsByMatch, type MatchResultScore } from "@/lib/home-fixtures";
+import { buildGoalsByMatch } from "@/lib/match-goals-display";
 import type { FixtureRow } from "@/lib/predictions-types";
 
 export const metadata: Metadata = {
@@ -44,6 +45,7 @@ export default async function ResultadosPage({ searchParams }: ResultadosPagePro
     { data: standingsRaw, error: standingsError },
     { data: fixturesRaw, error: fixturesError },
     { data: resultsRaw },
+    { data: goalsRaw },
   ] = await Promise.all([
     supabase
       .from("v_group_standings")
@@ -62,6 +64,11 @@ export default async function ResultadosPage({ searchParams }: ResultadosPagePro
       .order("match_date")
       .order("match_time"),
     supabase.from("match_results").select("id_match, goals_home, goals_away"),
+    supabase
+      .from("match_goals")
+      .select("id_goal, id_match, minute, is_own_goal, players(name, teams(code))")
+      .order("id_match")
+      .order("minute"),
   ]);
 
   const standings = (standingsRaw ?? []) as GroupStandingRow[];
@@ -72,6 +79,7 @@ export default async function ResultadosPage({ searchParams }: ResultadosPagePro
   const resultsByMatch = buildResultsByMatch(
     (resultsRaw ?? []) as MatchResultScore[],
   );
+  const goalsByMatch = buildGoalsByMatch(goalsRaw ?? []);
   const fixtures = (fixturesRaw ?? []) as FixtureRow[];
 
   const error = view === "grupo" ? standingsError : fixturesError;
@@ -96,7 +104,7 @@ export default async function ResultadosPage({ searchParams }: ResultadosPagePro
 
         <ResultsViewSwitcher view={view} />
 
-        <div className="light-surface-panel flex flex-col gap-stack-gap">
+        <div className="light-surface-panel flex flex-col gap-4">
           {error ? (
             <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 font-geist text-sm text-destructive">
               {view === "grupo"
@@ -110,7 +118,11 @@ export default async function ResultadosPage({ searchParams }: ResultadosPagePro
           ) : null}
 
           {!error && view === "partido" ? (
-            <MatchResultsList fixtures={fixtures} resultsByMatch={resultsByMatch} />
+            <MatchResultsList
+              fixtures={fixtures}
+              resultsByMatch={resultsByMatch}
+              goalsByMatch={goalsByMatch}
+            />
           ) : null}
         </div>
       </main>

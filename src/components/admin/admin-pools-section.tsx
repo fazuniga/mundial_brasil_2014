@@ -83,7 +83,7 @@ export function AdminPoolsSection({ pools: initialPools }: AdminPoolsSectionProp
           Marca si cada participante pagó la Fase de Grupos y las fases
           eliminatorias por separado.
         </p>
-        <div className="flex flex-col gap-1 border border-black/10 items-start rounded-md shadow-sm bg-gray-50 p-2">
+        <div className="mt-1 flex flex-col gap-1 border border-black/10 items-start rounded-md shadow-sm bg-gray-50 p-2 px-3">
           <p className="font-geist text-xs text-black">
             Fase de Grupos: {groupPaidCount} de {pools.length} pagadas
           </p>

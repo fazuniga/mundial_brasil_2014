@@ -7,7 +7,11 @@ import { AdminMatchGoals } from "@/components/admin/admin-match-goals";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AdminFixtureRow, MatchGoalRow, MatchResultDraft } from "@/lib/admin-types";
-import { deriveFirstGoalFromGoals } from "@/lib/admin-utils";
+import {
+  deriveFirstGoalFromGoals,
+  deriveScoreFromGoals,
+  isAdminMatchDirty,
+} from "@/lib/admin-utils";
 import {
   formatFixtureDateTime,
   isKnockoutFixture,
@@ -24,6 +28,7 @@ type AdminMatchSectionProps = {
   baselines: Record<number, MatchResultDraft>;
   savedMatches: Set<number>;
   goalsByMatch: Record<number, MatchGoalRow[]>;
+  baselineGoalsByMatch: Record<number, MatchGoalRow[]>;
   players: PlayerRow[];
   savingMatchId: number | null;
   onDraftChange: (idMatch: number, field: keyof MatchResultDraft, value: string) => void;
@@ -43,6 +48,33 @@ const labeledScoreFieldClass =
 
 const labeledScoreInputClass =
   "h-10 min-w-0 flex-1 border-0 rounded-none bg-transparent px-2 font-geist text-base text-on-surface shadow-none focus-visible:border-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed";
+
+function regulationScoreDisplay(
+  fixture: AdminFixtureRow,
+  goals: MatchGoalRow[],
+  players: PlayerRow[],
+  draft: MatchResultDraft,
+  isSaved: boolean,
+): { home: string; away: string } | null {
+  if (goals.length > 0 || isSaved) {
+    const derived = deriveScoreFromGoals(
+      goals,
+      fixture.home_team_id,
+      fixture.away_team_id,
+      players,
+    );
+    return {
+      home: derived.goalsHome.toString(),
+      away: derived.goalsAway.toString(),
+    };
+  }
+
+  if (draft.goalsHome !== "" && draft.goalsAway !== "") {
+    return { home: draft.goalsHome, away: draft.goalsAway };
+  }
+
+  return null;
+}
 
 function LabeledScoreInput({
   label,
@@ -152,6 +184,7 @@ function AdminMatchCard({
     fixture.match_date,
     fixture.match_time,
   );
+  const score = regulationScoreDisplay(fixture, goals, players, draft, isSaved);
 
   return (
     <article className="rounded-lg border border-border/50 bg-slate-50/50 p-4 shadow-sm">
@@ -197,7 +230,7 @@ function AdminMatchCard({
                 "flex h-9 w-10 items-center justify-center text-lg sm:h-10 sm:w-12 sm:text-xl",
               )}
             >
-              {draft.goalsHome !== "" ? draft.goalsHome : "–"}
+              {score?.home ?? "–"}
             </span>
             <span className="hidden md:block font-headline text-base font-bold text-slate-500 readonly">–</span>
             <span
@@ -206,7 +239,7 @@ function AdminMatchCard({
                 "flex h-9 w-10 items-center justify-center text-lg sm:h-10 sm:w-12 sm:text-xl",
               )}
             >
-              {draft.goalsAway !== "" ? draft.goalsAway : "–"}
+              {score?.away ?? "–"}
             </span>
           </div>
           <div className="min-w-0 flex-1">
@@ -283,87 +316,23 @@ function AdminMatchForm({
 }) {
   const isKnockout = isKnockoutFixture(fixture);
   const derivedFirstGoal = deriveFirstGoalFromGoals(goals, players);
+  const derivedRegulation = deriveScoreFromGoals(
+    goals,
+    fixture.home_team_id,
+    fixture.away_team_id,
+    players,
+  );
 
   return (
     <div className="space-y-4">
       <p className="font-geist text-sm text-on-surface-variant">
-        Marcador de 90 minutos obligatorio. Prórroga y penales solo si aplican.
+        Registra cada gol del partido; el marcador de 90 minutos se calcula
+        automáticamente. En eliminatorias, indica prórroga y penales solo si
+        aplican.
       </p>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <LabeledScoreInput
-          id={`match-${fixture.id_match}-goals-home`}
-          label="Goles local (90 min)"
-          type="number"
-          min={0}
-          max={99}
-          value={draft.goalsHome}
-          onChange={(e) => onDraftChange("goalsHome", e.target.value)}
-          disabled={saving}
-        />
-        <LabeledScoreInput
-          id={`match-${fixture.id_match}-goals-away`}
-          label="Goles visitante (90 min)"
-          type="number"
-          min={0}
-          max={99}
-          value={draft.goalsAway}
-          onChange={(e) => onDraftChange("goalsAway", e.target.value)}
-          disabled={saving}
-        />
-        {isKnockout && (
-          <>
-            <LabeledScoreInput
-              id={`match-${fixture.id_match}-goals-home-et`}
-              label="Goles local (prórroga total)"
-              type="number"
-              min={0}
-              max={99}
-              value={draft.goalsHomeEt}
-              onChange={(e) => onDraftChange("goalsHomeEt", e.target.value)}
-              disabled={saving}
-              placeholder="Opcional"
-            />
-            <LabeledScoreInput
-              id={`match-${fixture.id_match}-goals-away-et`}
-              label="Goles visitante (prórroga total)"
-              type="number"
-              min={0}
-              max={99}
-              value={draft.goalsAwayEt}
-              onChange={(e) => onDraftChange("goalsAwayEt", e.target.value)}
-              disabled={saving}
-              placeholder="Opcional"
-            />
-            <LabeledScoreInput
-              id={`match-${fixture.id_match}-pens-home`}
-              label="Penales local"
-              type="number"
-              min={0}
-              max={20}
-              value={draft.pensHome}
-              onChange={(e) => onDraftChange("pensHome", e.target.value)}
-              disabled={saving}
-              placeholder="Opcional"
-            />
-            <LabeledScoreInput
-              id={`match-${fixture.id_match}-pens-away`}
-              label="Penales visitante"
-              type="number"
-              min={0}
-              max={20}
-              value={draft.pensAway}
-              onChange={(e) => onDraftChange("pensAway", e.target.value)}
-              disabled={saving}
-              placeholder="Opcional"
-            />
-          </>
-        )}
-      </div>
 
       <AdminMatchGoals
         fixture={fixture}
-        draft={draft}
         goals={goals}
         players={players}
         derivedFirstGoal={derivedFirstGoal}
@@ -371,6 +340,70 @@ function AdminMatchForm({
         onAddGoal={onAddGoal}
         onDeleteGoal={onDeleteGoal}
       />
+
+      <div className="rounded-xl border border-border/50 bg-white px-4 py-3">
+        <p className="font-geist text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+          Marcador 90 min (automático)
+        </p>
+        <div className="mt-2 flex items-center gap-2">
+          <span className={cn(scoreInputClass, "flex items-center justify-center")}>
+            {derivedRegulation.goalsHome}
+          </span>
+          <span className="font-headline text-lg font-bold text-slate-500">–</span>
+          <span className={cn(scoreInputClass, "flex items-center justify-center")}>
+            {derivedRegulation.goalsAway}
+          </span>
+        </div>
+      </div>
+
+      {isKnockout ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <LabeledScoreInput
+            id={`match-${fixture.id_match}-goals-home-et`}
+            label="Goles local (prórroga total)"
+            type="number"
+            min={0}
+            max={99}
+            value={draft.goalsHomeEt}
+            onChange={(e) => onDraftChange("goalsHomeEt", e.target.value)}
+            disabled={saving}
+            placeholder="Opcional"
+          />
+          <LabeledScoreInput
+            id={`match-${fixture.id_match}-goals-away-et`}
+            label="Goles visitante (prórroga total)"
+            type="number"
+            min={0}
+            max={99}
+            value={draft.goalsAwayEt}
+            onChange={(e) => onDraftChange("goalsAwayEt", e.target.value)}
+            disabled={saving}
+            placeholder="Opcional"
+          />
+          <LabeledScoreInput
+            id={`match-${fixture.id_match}-pens-home`}
+            label="Penales local"
+            type="number"
+            min={0}
+            max={20}
+            value={draft.pensHome}
+            onChange={(e) => onDraftChange("pensHome", e.target.value)}
+            disabled={saving}
+            placeholder="Opcional"
+          />
+          <LabeledScoreInput
+            id={`match-${fixture.id_match}-pens-away`}
+            label="Penales visitante"
+            type="number"
+            min={0}
+            max={20}
+            value={draft.pensAway}
+            onChange={(e) => onDraftChange("pensAway", e.target.value)}
+            disabled={saving}
+            placeholder="Opcional"
+          />
+        </div>
+      ) : null}
 
       <div className="flex justify-end">
         <Button type="button" onClick={onSave} disabled={saving || !dirty}>
@@ -388,6 +421,7 @@ export function AdminMatchSection({
   baselines,
   savedMatches,
   goalsByMatch,
+  baselineGoalsByMatch,
   players,
   savingMatchId,
   onDraftChange,
@@ -436,14 +470,9 @@ export function AdminMatchSection({
           const isSaved = savedMatches.has(fixture.id_match);
           const isExpanded = expandedMatches.has(fixture.id_match);
           const saving = savingMatchId === fixture.id_match;
-          const dirty =
-            draft.goalsHome !== baseline.goalsHome ||
-            draft.goalsAway !== baseline.goalsAway ||
-            draft.goalsHomeEt !== baseline.goalsHomeEt ||
-            draft.goalsAwayEt !== baseline.goalsAwayEt ||
-            draft.pensHome !== baseline.pensHome ||
-            draft.pensAway !== baseline.pensAway;
           const matchGoals = goalsByMatch[fixture.id_match] ?? [];
+          const baselineGoals = baselineGoalsByMatch[fixture.id_match] ?? [];
+          const dirty = isAdminMatchDirty(draft, baseline, matchGoals, baselineGoals);
 
           return (
             <AdminMatchCard
@@ -510,14 +539,16 @@ export function AdminMatchSection({
               const isSaved = savedMatches.has(fixture.id_match);
               const isExpanded = expandedMatches.has(fixture.id_match);
               const saving = savingMatchId === fixture.id_match;
-              const dirty =
-                draft.goalsHome !== baseline.goalsHome ||
-                draft.goalsAway !== baseline.goalsAway ||
-                draft.goalsHomeEt !== baseline.goalsHomeEt ||
-                draft.goalsAwayEt !== baseline.goalsAwayEt ||
-                draft.pensHome !== baseline.pensHome ||
-                draft.pensAway !== baseline.pensAway;
               const matchGoals = goalsByMatch[fixture.id_match] ?? [];
+              const baselineGoals = baselineGoalsByMatch[fixture.id_match] ?? [];
+              const dirty = isAdminMatchDirty(draft, baseline, matchGoals, baselineGoals);
+              const score = regulationScoreDisplay(
+                fixture,
+                matchGoals,
+                players,
+                draft,
+                isSaved,
+              );
 
               return (
                 <Fragment key={fixture.id_match}>
@@ -559,13 +590,13 @@ export function AdminMatchSection({
                     <td className="px-3 py-4 align-middle">
                       <div className="flex items-center justify-center gap-1.5">
                         <span className={cn(scoreInputClass, "flex items-center justify-center")}>
-                          {draft.goalsHome !== "" ? draft.goalsHome : "–"}
+                          {score?.home ?? "–"}
                         </span>
                         <span className="font-headline text-lg font-bold text-slate-500">
                           –
                         </span>
                         <span className={cn(scoreInputClass, "flex items-center justify-center")}>
-                          {draft.goalsAway !== "" ? draft.goalsAway : "–"}
+                          {score?.away ?? "–"}
                         </span>
                       </div>
                     </td>

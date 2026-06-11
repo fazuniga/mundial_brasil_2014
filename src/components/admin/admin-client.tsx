@@ -15,11 +15,14 @@ import type {
   MatchResultRow,
 } from "@/lib/admin-types";
 import {
+  deriveFirstGoalFromGoals,
+  deriveScoreFromGoals,
   groupAdminFixturesBySection,
+  isAdminMatchDirty,
   isMatchResultSaved,
-  matchDraftsAreEqual,
   matchResultDraftFromRow,
   parseMatchResultPayload,
+  regulationScoreToDraft,
 } from "@/lib/admin-utils";
 import { filterSectionsBySearch } from "@/lib/predictions-utils";
 
@@ -78,6 +81,7 @@ export function AdminClient({
     buildSavedMatches(resultsByMatch, matchIds),
   );
   const [goalsByMatch, setGoalsByMatch] = useState(initialGoalsByMatch);
+  const [baselineGoalsByMatch, setBaselineGoalsByMatch] = useState(initialGoalsByMatch);
 
   const [savingMatchId, setSavingMatchId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -99,12 +103,58 @@ export function AdminClient({
     setError(null);
   }
 
+  function syncRegulationDraft(idMatch: number, goals: MatchGoalRow[]) {
+    const fixture = fixtures.find((row) => row.id_match === idMatch);
+    if (!fixture) return;
+
+    const regulation = deriveScoreFromGoals(
+      goals,
+      fixture.home_team_id,
+      fixture.away_team_id,
+      players,
+    );
+
+    setDrafts((prev) => ({
+      ...prev,
+      [idMatch]: {
+        ...prev[idMatch],
+        ...regulationScoreToDraft(regulation),
+      },
+    }));
+  }
+
   async function handleSaveMatch(idMatch: number) {
     const draft = drafts[idMatch];
     const baseline = baselines[idMatch];
-    if (!draft || matchDraftsAreEqual(draft, baseline)) return;
+    if (!draft || !baseline) return;
 
-    const { payload, error: parseError } = parseMatchResultPayload(idMatch, draft);
+    const matchGoals = goalsByMatch[idMatch] ?? [];
+    const baselineGoals = baselineGoalsByMatch[idMatch] ?? [];
+    if (!isAdminMatchDirty(draft, baseline, matchGoals, baselineGoals)) return;
+
+    const fixture = fixtures.find((row) => row.id_match === idMatch);
+    if (!fixture) return;
+
+    const regulation = deriveScoreFromGoals(
+      matchGoals,
+      fixture.home_team_id,
+      fixture.away_team_id,
+      players,
+    );
+    const firstGoal = deriveFirstGoalFromGoals(matchGoals, players);
+    const syncedDraft = {
+      ...draft,
+      ...regulationScoreToDraft(regulation),
+    };
+
+    const { payload, error: parseError } = parseMatchResultPayload(
+      idMatch,
+      syncedDraft,
+      regulation,
+      firstGoal
+        ? { minute: firstGoal.minute, playerId: firstGoal.playerId }
+        : null,
+    );
     if (parseError) {
       setError(parseError);
       return;
@@ -126,7 +176,9 @@ export function AdminClient({
       return;
     }
 
-    setBaselines((prev) => ({ ...prev, [idMatch]: { ...draft } }));
+    setDrafts((prev) => ({ ...prev, [idMatch]: syncedDraft }));
+    setBaselines((prev) => ({ ...prev, [idMatch]: syncedDraft }));
+    setBaselineGoalsByMatch((prev) => ({ ...prev, [idMatch]: matchGoals }));
     setSavedMatches((prev) => new Set(prev).add(idMatch));
     setSuccess(`Resultado guardado (partido ${idMatch}).`);
     router.refresh();
@@ -157,10 +209,12 @@ export function AdminClient({
       player_name: playerName,
     };
 
+    const nextGoals = [...(goalsByMatch[idMatch] ?? []), row];
     setGoalsByMatch((prev) => ({
       ...prev,
-      [idMatch]: [...(prev[idMatch] ?? []), row],
+      [idMatch]: nextGoals,
     }));
+    syncRegulationDraft(idMatch, nextGoals);
     setSuccess(`Gol agregado (partido ${idMatch}).`);
     router.refresh();
     return null;
@@ -175,10 +229,12 @@ export function AdminClient({
 
     if (deleteError) return deleteError.message;
 
+    const nextGoals = (goalsByMatch[idMatch] ?? []).filter((g) => g.id_goal !== idGoal);
     setGoalsByMatch((prev) => ({
       ...prev,
-      [idMatch]: (prev[idMatch] ?? []).filter((g) => g.id_goal !== idGoal),
+      [idMatch]: nextGoals,
     }));
+    syncRegulationDraft(idMatch, nextGoals);
     setSuccess(`Gol eliminado (partido ${idMatch}).`);
     router.refresh();
     return null;
@@ -232,6 +288,7 @@ export function AdminClient({
           baselines={baselines}
           savedMatches={savedMatches}
           goalsByMatch={goalsByMatch}
+          baselineGoalsByMatch={baselineGoalsByMatch}
           players={players}
           savingMatchId={savingMatchId}
           onDraftChange={handleDraftChange}

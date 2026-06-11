@@ -8,24 +8,28 @@ type PoolRankingsTableProps = {
   currentUserId?: string | null;
 };
 
-function rankMedalIcon(position: number): string | null {
-  if (position === 1) return "emoji_events";
-  if (position === 2) return "military_tech";
-  if (position === 3) return "workspace_premium";
-  return null;
+function isPodiumPosition(position: number): boolean {
+  return position >= 1 && position <= 3;
 }
 
-function rankMedalAriaLabel(position: number): string | null {
+function rankAriaLabel(position: number): string | null {
   if (position === 1) return "Primer lugar";
   if (position === 2) return "Segundo lugar";
   if (position === 3) return "Tercer lugar";
   return null;
 }
 
-function rankMedalClassName(position: number): string {
-  if (position === 1) return "text-base text-amber-500 sm:text-lg";
-  if (position === 2) return "text-base text-slate-400 sm:text-lg";
-  return "text-base text-amber-700 sm:text-lg";
+function rankRowClassName(position: number): string | null {
+  if (position === 1) return "bg-amber-50";
+  if (position === 2) return "bg-slate-100";
+  if (position === 3) return "bg-orange-50";
+  return null;
+}
+
+function rankBadgeClassName(position: number): string {
+  if (position === 1) return "bg-amber-500 text-white";
+  if (position === 2) return "bg-slate-400 text-white";
+  return "bg-amber-700 text-white";
 }
 
 function paymentStatusLabel(phase: string, isPaid: boolean): string {
@@ -55,7 +59,7 @@ function PaymentStatusIcon({
 }
 
 function buildGridTemplateColumns(showPayment: boolean, showBreakdown: boolean): string {
-  const cols = ["2.25rem", "2rem", "minmax(0,1fr)"];
+  const cols = ["2.5rem", "minmax(0,1fr)"];
   if (showPayment) cols.push("3.5rem", "3.25rem");
   cols.push("3rem", "3.25rem");
   if (showBreakdown) {
@@ -100,7 +104,7 @@ export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProp
       <div
         className={cn(
           "font-geist text-xs sm:text-sm",
-          showBreakdown && "min-w-[32rem]",
+          showBreakdown && "min-w-lg",
         )}
         role="table"
         aria-label="Clasificación de jugadores"
@@ -113,7 +117,6 @@ export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProp
           <div role="columnheader" className={`${compactCellPad} text-center`}>
             #
           </div>
-          <div role="columnheader" className={`${compactCellPad} text-center`} aria-hidden />
           <div role="columnheader" className={cellPad}>
             Jugador
           </div>
@@ -183,8 +186,8 @@ export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProp
         </div>
 
         {rows.map((row) => {
-          const medal = rankMedalIcon(row.rank_position);
-          const medalLabel = rankMedalAriaLabel(row.rank_position);
+          const podium = isPodiumPosition(row.rank_position);
+          const podiumLabel = rankAriaLabel(row.rank_position);
           const isCurrentUser = currentUserId != null && row.owner_id === currentUserId;
 
           return (
@@ -193,26 +196,29 @@ export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProp
               role="row"
               className={cn(
                 "grid items-center gap-x-1 border-b border-outline-variant/30",
-                isCurrentUser && "border-outline-variant/40 bg-primary-container/15",
+                rankRowClassName(row.rank_position),
+                isCurrentUser &&
+                  !podium &&
+                  "border-outline-variant/40 bg-primary-container/15",
+                isCurrentUser && podium && "ring-inset ring-primary/35",
               )}
               style={gridStyle}
             >
               <div role="cell" className={`${compactCellPad} text-center tabular-nums`}>
-                <span className="font-semibold text-on-surface">{row.rank_position}</span>
-              </div>
-              <div role="cell" className={`${compactCellPad} text-center`}>
-                {medal && medalLabel ? (
+                {podium ? (
                   <span
-                    title={medalLabel}
-                    aria-label={medalLabel}
-                    className="inline-flex shrink-0 justify-center"
+                    title={podiumLabel ?? undefined}
+                    aria-label={podiumLabel ?? undefined}
+                    className={cn(
+                      "inline-flex size-6 items-center justify-center rounded-full text-xs font-bold sm:size-7 sm:text-sm",
+                      rankBadgeClassName(row.rank_position),
+                    )}
                   >
-                    <MaterialIcon
-                      name={medal}
-                      className={rankMedalClassName(row.rank_position)}
-                    />
+                    {row.rank_position}
                   </span>
-                ) : null}
+                ) : (
+                  <span className="font-semibold text-on-surface">{row.rank_position}</span>
+                )}
               </div>
               <div role="cell" className={`${cellPad} min-w-0`}>
                 <p className="truncate font-medium text-on-surface">

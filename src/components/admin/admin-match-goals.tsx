@@ -9,12 +9,11 @@ import { Label } from "@/components/ui/label";
 import type { MatchGoalRow } from "@/lib/admin-types";
 import { parseGoalMinute, playersForMatch } from "@/lib/admin-utils";
 import type { AdminFixtureRow } from "@/lib/admin-types";
-import type { MatchResultDraft } from "@/lib/admin-types";
 import type { PlayerRow } from "@/lib/predictions-types";
+import { cn } from "@/lib/utils";
 
 type AdminMatchGoalsProps = {
   fixture: AdminFixtureRow;
-  draft: MatchResultDraft;
   goals: MatchGoalRow[];
   players: PlayerRow[];
   derivedFirstGoal: { minute: number; playerId: number; playerName: string } | null;
@@ -32,7 +31,6 @@ const fieldInputClass =
 
 export function AdminMatchGoals({
   fixture,
-  draft,
   goals,
   players,
   derivedFirstGoal,
@@ -52,15 +50,6 @@ export function AdminMatchGoals({
     fixture.home_team_id,
     fixture.away_team_id,
   );
-
-  const goalsHome = draft.goalsHome.trim() === "" ? null : Number.parseInt(draft.goalsHome, 10);
-  const goalsAway = draft.goalsAway.trim() === "" ? null : Number.parseInt(draft.goalsAway, 10);
-  const expectedTotal =
-    goalsHome != null && goalsAway != null && !Number.isNaN(goalsHome) && !Number.isNaN(goalsAway)
-      ? goalsHome + goalsAway
-      : null;
-  const goalCountMismatch =
-    expectedTotal != null && goals.length !== expectedTotal;
 
   async function handleAdd() {
     const parsedMinute = parseGoalMinute(minute);
@@ -115,22 +104,14 @@ export function AdminMatchGoals({
         </p>
       </div>
 
-      {goalCountMismatch ? (
-        <p className="rounded-lg border border-accent/30 bg-accent/5 px-4 py-3 font-geist text-sm text-on-surface">
-          Advertencia: {goals.length} gol{goals.length === 1 ? "" : "es"} registrados
-          {" · "}
-          marcador indica {expectedTotal} en total.
-        </p>
-      ) : null}
-
       {sortedGoals.length > 0 ? (
         <ul className="divide-y divide-border/40 rounded-xl border border-border/50 bg-white">
           {sortedGoals.map((goal) => (
             <li
               key={goal.id_goal}
-              className="flex items-center justify-between gap-3 px-4 py-3"
+              className="flex items-center justify-between gap-3 px-4 py-1.5"
             >
-              <div className="min-w-0 flex items-center gap-2">
+              <div className="min-w-0 flex items-center gap-1">
                 <p className="font-geist text-base text-on-surface">
                   {goal.player_name ?? `Jugador ${goal.id_player}`}
                   {goal.is_own_goal ? (
@@ -139,13 +120,14 @@ export function AdminMatchGoals({
                 </p>
                 <span className="text-sm text-on-surface-variant">·</span>
                 <p className="font-geist text-sm text-on-surface-variant">
-                  minuto {goal.minute}
+                  Minuto {goal.minute}
                 </p>
               </div>
               <Button
                 type="button"
-                variant="outline"
+                variant="default"
                 size="sm"
+                className="bg-red-100! hover:bg-red-200! rounded-sm!"
                 disabled={saving || deletingId != null}
                 onClick={() => handleDelete(goal.id_goal)}
               >
@@ -158,19 +140,21 @@ export function AdminMatchGoals({
         <p className="font-geist text-sm text-on-surface-variant">Sin goles registrados.</p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <PlayerSearchSelect
-          id={`goal-player-${fixture.id_match}`}
-          label="Autor del gol"
-          players={matchPlayers.length > 0 ? matchPlayers : players}
-          value={playerId}
-          onChange={setPlayerId}
-          disabled={saving || adding}
-        />
-        <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+        <div className="min-w-0 flex-1">
+          <PlayerSearchSelect
+            id={`goal-player-${fixture.id_match}`}
+            label="Autor del gol"
+            players={matchPlayers.length > 0 ? matchPlayers : players}
+            value={playerId}
+            onChange={setPlayerId}
+            disabled={saving || adding}
+          />
+        </div>
+        <div className="flex shrink-0 flex-col gap-2 sm:w-24">
           <Label
             htmlFor={`goal-minute-${fixture.id_match}`}
-            className="font-geist text-sm text-on-surface-variant"
+            className="font-geist text-xs text-on-surface-variant"
           >
             Minuto
           </Label>
@@ -182,37 +166,34 @@ export function AdminMatchGoals({
             value={minute}
             onChange={(e) => setMinute(e.target.value)}
             disabled={saving || adding}
-            className={fieldInputClass}
-            placeholder="Ej. 23, 67, 105"
+            className={cn(fieldInputClass, "px-2 text-center tabular-nums")}
+            placeholder="23"
           />
         </div>
-        <div className="flex flex-col gap-2">
-          <Label className="sr-only">Autogol</Label>
-          <label className="flex h-10 cursor-pointer items-center gap-2 font-geist text-base text-on-surface">
-            <input
-              type="checkbox"
-              checked={isOwnGoal}
-              onChange={(e) => setIsOwnGoal(e.target.checked)}
-              disabled={saving || adding}
-              className="h-4 w-4 rounded border-outline-variant"
-            />
-            Autogol
-          </label>
-        </div>
-        <div className="flex flex-col gap-2">
-          <span className="sr-only">Acción</span>
-          <div className="flex h-10 items-center">
+        <div className="flex shrink-0 flex-col gap-2 text-center">
+          <Label className="font-geist text-xs text-on-surface-variant">Autogol</Label>
           <Button
             type="button"
-            size="sm"
-            onClick={handleAdd}
+            variant="outline"
             disabled={saving || adding}
-            className="w-full sm:w-auto border border-border/40"
+            aria-pressed={isOwnGoal}
+            onClick={() => setIsOwnGoal((value) => !value)}
+            className={cn(
+              "h-10 border-border/60 font-geist",
+              isOwnGoal && "border-accent bg-accent/10 text-accent hover:bg-accent/15",
+            )}
           >
-            {adding ? "Agregando…" : "Agregar gol"}
+            {isOwnGoal ? "Sí" : "No"}
           </Button>
-          </div>
         </div>
+        <Button
+          type="button"
+          onClick={handleAdd}
+          disabled={saving || adding}
+          className="h-10 shrink-0 border border-border/40 bg-primary text-primary-foreground hover:bg-primary-hover text-sm sm:w-auto"
+        >
+          {adding ? "Agregando…" : "Agregar gol"}
+        </Button>
       </div>
 
       {localError ? (
