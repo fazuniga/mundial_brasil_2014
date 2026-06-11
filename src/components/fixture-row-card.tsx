@@ -40,7 +40,7 @@ function TeamBadge({
           </span>
         )}
       </div>
-      <p className="truncate font-geist text-sm font-medium text-on-surface">
+      <p className="line-clamp-2 font-geist text-sm font-medium text-on-surface">
         {country}
       </p>
     </div>
@@ -73,7 +73,7 @@ export function FixtureRowCard({
   return (
     <li className="border-b border-outline-variant/40 last:border-b-0">
       <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:gap-4">
-        <div className="min-w-0 shrink-0 sm:w-36">
+        <div className="min-w-0 shrink-0 sm:w-52">
           <p className="font-geist text-xs font-medium capitalize text-on-surface">
             {dateShort} · {timeShort} {MATCH_TIMEZONE_ABBR}
           </p>

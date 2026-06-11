@@ -193,19 +193,19 @@ function RankingRow({
       <PointsCell row={row} />
       {variant === "full" ? (
         <>
-          <div role="cell" className="px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3">
+          <div role="cell" className="text-base px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3">
             {row.exact_hits}
           </div>
-          <div role="cell" className="px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3">
+          <div role="cell" className="text-base px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3">
             {row.goal_diff_hits}
           </div>
-          <div role="cell" className="px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3">
+          <div role="cell" className="text-base px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3">
             {row.winner_hits}
           </div>
-          <div role="cell" className="px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3">
+          <div role="cell" className="text-base px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3">
             {row.side_bet_points}
           </div>
-          <div role="cell" className="px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3">
+          <div role="cell" className="text-base px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3">
             {row.tournament_points}
           </div>
         </>
