@@ -197,6 +197,27 @@ export function isAdminMatchDirty(
   );
 }
 
+/** Unsaved 0-0 with no goals listed is valid but not "dirty" until explicitly allowed to save. */
+export function canSaveAdminMatch(
+  draft: MatchResultDraft,
+  baseline: MatchResultDraft,
+  goals: MatchGoalRow[],
+  baselineGoals: MatchGoalRow[],
+  isSaved: boolean,
+  regulationScore: DerivedRegulationScore,
+): boolean {
+  if (isAdminMatchDirty(draft, baseline, goals, baselineGoals)) {
+    return true;
+  }
+
+  return (
+    !isSaved &&
+    goals.length === 0 &&
+    regulationScore.goalsHome === 0 &&
+    regulationScore.goalsAway === 0
+  );
+}
+
 export type DerivedFirstGoal = {
   minute: number;
   playerId: number;

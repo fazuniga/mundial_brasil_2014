@@ -128,8 +128,8 @@ export default async function AdminPage() {
 
   return (
     <>
-      <SiteHeader userEmail={user.email} isAdmin activeNav="profile" />
-      <main className="mx-auto flex w-full max-w-7xl flex-col gap-section-gap px-gutter-md pb-24 pt-[calc(4rem+2rem)] md:pb-8">
+      <SiteHeader userEmail={user.email} isAdmin activeNav="perfil" />
+      <main className="mx-auto flex w-full max-w-7xl flex-col gap-section-gap px-gutter-md py-24 md:pb-8">
         <header className="space-y-3">
           <p className="font-geist text-sm font-semibold uppercase tracking-widest text-accent">
             Administración

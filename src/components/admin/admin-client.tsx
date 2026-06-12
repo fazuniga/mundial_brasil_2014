@@ -18,7 +18,7 @@ import {
   deriveFirstGoalFromGoals,
   deriveScoreFromGoals,
   groupAdminFixturesBySection,
-  isAdminMatchDirty,
+  canSaveAdminMatch,
   isMatchResultSaved,
   matchResultDraftFromRow,
   parseMatchResultPayload,
@@ -130,8 +130,6 @@ export function AdminClient({
 
     const matchGoals = goalsByMatch[idMatch] ?? [];
     const baselineGoals = baselineGoalsByMatch[idMatch] ?? [];
-    if (!isAdminMatchDirty(draft, baseline, matchGoals, baselineGoals)) return;
-
     const fixture = fixtures.find((row) => row.id_match === idMatch);
     if (!fixture) return;
 
@@ -141,6 +139,19 @@ export function AdminClient({
       fixture.away_team_id,
       players,
     );
+    const isSaved = savedMatches.has(idMatch);
+    if (
+      !canSaveAdminMatch(
+        draft,
+        baseline,
+        matchGoals,
+        baselineGoals,
+        isSaved,
+        regulation,
+      )
+    ) {
+      return;
+    }
     const firstGoal = deriveFirstGoalFromGoals(matchGoals, players);
     const syncedDraft = {
       ...draft,

@@ -13,6 +13,7 @@ import type { AdminFixtureRow, MatchGoalRow, MatchResultDraft } from "@/lib/admi
 import {
   deriveFirstGoalFromGoals,
   deriveScoreFromGoals,
+  canSaveAdminMatch,
   isAdminMatchDirty,
 } from "@/lib/admin-utils";
 import {
@@ -153,7 +154,9 @@ function TeamCell({
 function AdminMatchCard({
   fixture,
   draft,
+  baseline,
   goals,
+  baselineGoals,
   players,
   isSaved,
   isExpanded,
@@ -167,7 +170,9 @@ function AdminMatchCard({
 }: {
   fixture: AdminFixtureRow;
   draft: MatchResultDraft;
+  baseline: MatchResultDraft;
   goals: MatchGoalRow[];
+  baselineGoals: MatchGoalRow[];
   players: PlayerRow[];
   isSaved: boolean;
   isExpanded: boolean;
@@ -274,10 +279,12 @@ function AdminMatchCard({
             <AdminMatchForm
               fixture={fixture}
               draft={draft}
+              baseline={baseline}
               goals={goals}
+              baselineGoals={baselineGoals}
               players={players}
+              isSaved={isSaved}
               saving={saving}
-              dirty={dirty}
               onDraftChange={onDraftChange}
               onSave={onSave}
               onAddGoal={onAddGoal}
@@ -293,10 +300,12 @@ function AdminMatchCard({
 function AdminMatchForm({
   fixture,
   draft,
+  baseline,
   goals,
+  baselineGoals,
   players,
+  isSaved,
   saving,
-  dirty,
   onDraftChange,
   onSave,
   onAddGoal,
@@ -304,10 +313,12 @@ function AdminMatchForm({
 }: {
   fixture: AdminFixtureRow;
   draft: MatchResultDraft;
+  baseline: MatchResultDraft;
   goals: MatchGoalRow[];
+  baselineGoals: MatchGoalRow[];
   players: PlayerRow[];
+  isSaved: boolean;
   saving: boolean;
-  dirty: boolean;
   onDraftChange: (field: keyof MatchResultDraft, value: string) => void;
   onSave: () => void;
   onAddGoal: (payload: {
@@ -324,6 +335,14 @@ function AdminMatchForm({
     fixture.home_team_id,
     fixture.away_team_id,
     players,
+  );
+  const canSave = canSaveAdminMatch(
+    draft,
+    baseline,
+    goals,
+    baselineGoals,
+    isSaved,
+    derivedRegulation,
   );
 
   return (
@@ -349,7 +368,7 @@ function AdminMatchForm({
           <p className="font-geist text-sm font-medium text-on-surface-variant">
             Marcador 90 min (automático)
           </p>
-          <div className="mt-2 flex flex-1 items-center gap-2">
+          <div className="mt-2 flex flex-1 items-center justify-center gap-2">
             <span className={cn(scoreInputClass, "flex items-center justify-center")}>
               {derivedRegulation.goalsHome}
             </span>
@@ -411,7 +430,7 @@ function AdminMatchForm({
       ) : null}
 
       <div className="flex justify-center">
-        <Button type="button" onClick={onSave} disabled={saving || !dirty} className="w-full max-w-xs bg-white! hover:bg-primary-hover! hover:text-white!">
+        <Button type="button" onClick={onSave} disabled={saving || !canSave} className="w-full max-w-xs bg-white! hover:bg-primary-hover! hover:text-white!">
           {saving ? "Guardando…" : "Guardar partido"}
         </Button>
       </div>
@@ -484,7 +503,9 @@ export function AdminMatchSection({
               key={fixture.id_match}
               fixture={fixture}
               draft={draft}
+              baseline={baseline}
               goals={matchGoals}
+              baselineGoals={baselineGoals}
               players={players}
               isSaved={isSaved}
               isExpanded={isExpanded}
@@ -639,10 +660,12 @@ export function AdminMatchSection({
                         <AdminMatchForm
                           fixture={fixture}
                           draft={draft}
+                          baseline={baseline}
                           goals={matchGoals}
+                          baselineGoals={baselineGoals}
                           players={players}
+                          isSaved={isSaved}
                           saving={saving}
-                          dirty={dirty}
                           onDraftChange={(field, value) =>
                             onDraftChange(fixture.id_match, field, value)
                           }

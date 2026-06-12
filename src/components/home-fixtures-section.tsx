@@ -93,7 +93,7 @@ export function HomeFixturesSection({
         resultsByMatch={resultsByMatch}
         action={
           <Link
-            href="/predictions"
+            href="/apuestas"
             className="font-geist flex items-center gap-1 rounded-lg border border-outline-variant px-3 py-2 text-xs font-medium text-on-surface transition-colors hover:bg-surface-variant"
           >
             Ver todos

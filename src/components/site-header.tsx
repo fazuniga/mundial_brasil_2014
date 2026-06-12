@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 type SiteHeaderProps = {
   userEmail?: string | null;
   isAdmin?: boolean;
-  activeNav?: "home" | "matches" | "resultados" | "clasificacion" | "profile";
+  activeNav?: "partidos" | "apuestas" | "clasificacion" | "perfil";
 };
 
 const navLinkClass =
@@ -14,12 +14,12 @@ const navLinkClass =
 export function SiteHeader({
   userEmail,
   isAdmin = false,
-  activeNav = "home",
+  activeNav = "partidos",
 }: SiteHeaderProps) {
   return (
     <header className="fixed top-0 z-50 w-full border-b border-outline-variant/40 bg-surface/95 shadow-sm backdrop-blur-md">
       <div className="mx-auto flex h-header-height w-full max-w-7xl items-center justify-between px-gutter-md">
-        <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
+        <Link href="/partidos" className="flex items-center gap-3 transition-opacity hover:opacity-80">
           <MaterialIcon name="sports_soccer" className="text-3xl text-primary" />
           <h1 className="font-headline text-lg font-bold text-primary md:text-xl">
             Mundial 2026
@@ -28,44 +28,32 @@ export function SiteHeader({
 
         <nav className="hidden items-center gap-2 md:flex">
           <Link
-            href="/"
+            href="/partidos"
             className={cn(
               navLinkClass,
-              activeNav === "home"
-                ? "bg-surface-container-high font-bold text-primary"
-                : "text-on-surface-variant hover:bg-surface-container-high",
-            )}
-          >
-            <MaterialIcon name="home" filled={activeNav === "home"} className="text-xl" />
-            Inicio
-          </Link>
-          <Link
-            href="/predictions"
-            className={cn(
-              navLinkClass,
-              activeNav === "matches"
-                ? "bg-surface-container-high font-bold text-primary"
-                : "text-on-surface-variant hover:bg-surface-container-high",
-            )}
-          >
-            <MaterialIcon name="event_note" filled={activeNav === "matches"} className="text-xl" />
-            Apuestas
-          </Link>
-          <Link
-            href="/resultados"
-            className={cn(
-              navLinkClass,
-              activeNav === "resultados"
+              activeNav === "partidos"
                 ? "bg-surface-container-high font-bold text-primary"
                 : "text-on-surface-variant hover:bg-surface-container-high",
             )}
           >
             <MaterialIcon
               name="grid_view"
-              filled={activeNav === "resultados"}
+              filled={activeNav === "partidos"}
               className="text-xl"
             />
-            Resultados
+            Partidos
+          </Link>
+          <Link
+            href="/apuestas"
+            className={cn(
+              navLinkClass,
+              activeNav === "apuestas"
+                ? "bg-surface-container-high font-bold text-primary"
+                : "text-on-surface-variant hover:bg-surface-container-high",
+            )}
+          >
+            <MaterialIcon name="event_note" filled={activeNav === "apuestas"} className="text-xl" />
+            Apuestas
           </Link>
           <Link
             href="/clasificacion"
@@ -84,15 +72,15 @@ export function SiteHeader({
             Clasificación
           </Link>
           <Link
-            href="/profile"
+            href="/perfil"
             className={cn(
               navLinkClass,
-              activeNav === "profile"
+              activeNav === "perfil"
                 ? "bg-surface-container-high font-bold text-primary"
                 : "text-on-surface-variant hover:bg-surface-container-high",
             )}
           >
-            <MaterialIcon name="person" filled={activeNav === "profile"} className="text-xl" />
+            <MaterialIcon name="person" filled={activeNav === "perfil"} className="text-xl" />
             Perfil
           </Link>
         </nav>

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { MaterialIcon } from "@/components/material-icon";
 import { MATCH_TIMEZONE_ABBR } from "@/lib/match-timezone";
@@ -53,6 +54,7 @@ type FixtureRowCardProps = {
   goals?: MatchGoalPublicRow[];
   showPredictLink: boolean;
   showVenue?: boolean;
+  footer?: ReactNode;
 };
 
 export function FixtureRowCard({
@@ -61,6 +63,7 @@ export function FixtureRowCard({
   goals,
   showPredictLink,
   showVenue = false,
+  footer,
 }: FixtureRowCardProps) {
   const { dateShort, timeShort } = formatFixtureDateTime(
     fixture.match_date,
@@ -128,7 +131,7 @@ export function FixtureRowCard({
 
         {showPredictLink && fixture.predictions_open ? (
           <Link
-            href="/predictions"
+            href="/apuestas"
             className="font-geist flex shrink-0 items-center gap-1 self-start text-xs font-medium text-primary hover:underline sm:self-center"
           >
             Pronosticar
@@ -136,6 +139,12 @@ export function FixtureRowCard({
           </Link>
         ) : null}
       </div>
+
+      {footer ? (
+        <div className="border-t border-outline-variant/30 bg-surface-container-lowest px-4 py-3">
+          {footer}
+        </div>
+      ) : null}
     </li>
   );
 }

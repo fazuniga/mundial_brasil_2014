@@ -18,10 +18,10 @@ export function ResultsViewSwitcher({ view }: ResultsViewSwitcherProps) {
 
   function handleChange(next: string) {
     if (next === "grupo") {
-      router.push("/resultados");
+      router.push("/partidos");
       return;
     }
-    router.push("/resultados?v=partido");
+    router.push("/partidos?v=partido");
   }
 
   return (

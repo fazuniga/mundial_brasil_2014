@@ -9,7 +9,7 @@ type HomeHeroProps = {
 };
 
 export function HomeHero({ isAuthenticated }: HomeHeroProps) {
-  const ctaHref = isAuthenticated ? "/predictions" : "/register";
+  const ctaHref = isAuthenticated ? "/apuestas" : "/register";
 
   return (
     <section

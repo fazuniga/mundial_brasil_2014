@@ -3,7 +3,7 @@ import { MaterialIcon } from "@/components/material-icon";
 import { cn } from "@/lib/utils";
 
 type MobileBottomNavProps = {
-  active?: "home" | "matches" | "resultados" | "clasificacion" | "profile" | "admin";
+  active?: "partidos" | "apuestas" | "clasificacion" | "perfil" | "admin";
   isAdmin?: boolean;
 };
 
@@ -11,7 +11,7 @@ const itemClass =
   "flex min-w-0 flex-1 flex-col items-center justify-center rounded-lg transition-colors";
 
 export function MobileBottomNav({
-  active = "home",
+  active = "partidos",
   isAdmin = false,
 }: MobileBottomNavProps) {
   const compact = true;
@@ -24,71 +24,48 @@ export function MobileBottomNav({
       )}
     >
       <Link
-        href="/"
+        href="/partidos"
         className={cn(
           itemClass,
           compact ? "p-1" : "p-2",
-          active === "home" ? "text-primary" : "text-on-surface-variant",
-        )}
-      >
-        <MaterialIcon
-          name="home"
-          filled={active === "home"}
-          className={cn("mb-0.5", compact ? "text-xl" : "mb-1 text-2xl")}
-        />
-        <span
-          className={cn(
-            compact ? "text-[10px] leading-tight" : "text-xs",
-            active === "home" ? "font-bold" : "font-medium",
-          )}
-        >
-          Inicio
-        </span>
-      </Link>
-
-      <Link
-        href="/predictions"
-        className={cn(
-          itemClass,
-          compact ? "p-1" : "p-2",
-          active === "matches" ? "text-primary" : "text-on-surface-variant",
-        )}
-      >
-        <MaterialIcon
-          name="event_note"
-          filled={active === "matches"}
-          className={cn("mb-0.5", compact ? "text-xl" : "mb-1 text-2xl")}
-        />
-        <span
-          className={cn(
-            compact ? "text-[10px] leading-tight" : "text-xs",
-            active === "matches" ? "font-bold" : "font-medium",
-          )}
-        >
-          Apuestas
-        </span>
-      </Link>
-
-      <Link
-        href="/resultados"
-        className={cn(
-          itemClass,
-          compact ? "p-1" : "p-2",
-          active === "resultados" ? "text-primary" : "text-on-surface-variant",
+          active === "partidos" ? "text-primary" : "text-on-surface-variant",
         )}
       >
         <MaterialIcon
           name="grid_view"
-          filled={active === "resultados"}
+          filled={active === "partidos"}
           className={cn("mb-0.5", compact ? "text-xl" : "mb-1 text-2xl")}
         />
         <span
           className={cn(
             compact ? "text-[10px] leading-tight" : "text-xs",
-            active === "resultados" ? "font-bold" : "font-medium",
+            active === "partidos" ? "font-bold" : "font-medium",
           )}
         >
-          Resultados
+          Partidos
+        </span>
+      </Link>
+
+      <Link
+        href="/apuestas"
+        className={cn(
+          itemClass,
+          compact ? "p-1" : "p-2",
+          active === "apuestas" ? "text-primary" : "text-on-surface-variant",
+        )}
+      >
+        <MaterialIcon
+          name="event_note"
+          filled={active === "apuestas"}
+          className={cn("mb-0.5", compact ? "text-xl" : "mb-1 text-2xl")}
+        />
+        <span
+          className={cn(
+            compact ? "text-[10px] leading-tight" : "text-xs",
+            active === "apuestas" ? "font-bold" : "font-medium",
+          )}
+        >
+          Apuestas
         </span>
       </Link>
 
@@ -116,22 +93,22 @@ export function MobileBottomNav({
       </Link>
 
       <Link
-        href="/profile"
+        href="/perfil"
         className={cn(
           itemClass,
           compact ? "p-1" : "p-2",
-          active === "profile" ? "text-primary" : "text-on-surface-variant",
+          active === "perfil" ? "text-primary" : "text-on-surface-variant",
         )}
       >
         <MaterialIcon
           name="person"
-          filled={active === "profile"}
+          filled={active === "perfil"}
           className={cn("mb-0.5", compact ? "text-xl" : "mb-1 text-2xl")}
         />
         <span
           className={cn(
             compact ? "text-[10px] leading-tight" : "text-xs",
-            active === "profile" ? "font-bold" : "font-medium",
+            active === "perfil" ? "font-bold" : "font-medium",
           )}
         >
           Perfil
