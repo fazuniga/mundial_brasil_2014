@@ -117,24 +117,32 @@ SELECT t.id_team, p.name, p.position, p.club, p.club_country
 FROM public.teams t
 CROSS JOIN (
   VALUES
-  ('Milan Borjan', 'GK', 'Red Star Belgrade', 'SRB'),
-  ('Maxime Crépeau', 'GK', 'Portland Timbers', 'USA'),
+  ('Dayne St. Clair', 'GK', 'Inter Miami CF', 'USA'),
+  ('Maxime Crépeau', 'GK', 'Orlando City SC', 'USA'),
+  ('Owen Goodman', 'GK', 'Barnsley', 'ENG'),
+  ('Alistair Johnston', 'DF', 'Celtic', 'SCO'),
+  ('Alfie Jones', 'DF', 'Middlesbrough', 'ENG'),
+  ('Luc de Fougerolles', 'DF', 'Dender', 'BEL'),
+  ('Joel Waterman', 'DF', 'Chicago Fire FC', 'USA'),
+  ('Derek Cornelius', 'DF', 'Rangers', 'SCO'),
+  ('Moïse Bombito', 'DF', 'Nice', 'FRA'),
   ('Alphonso Davies', 'DF', 'Bayern Munich', 'GER'),
-  ('Sam Adekugbe', 'DF', 'Hatayspor', 'TUR'),
-  ('Derek Cornelius', 'DF', 'Marseille', 'FRA'),
   ('Richie Laryea', 'DF', 'Toronto FC', 'CAN'),
-  ('Samuel Piette', 'MF', 'CF Montréal', 'CAN'),
-  ('Stephen Eustáquio', 'MF', 'Porto', 'POR'),
+  ('Niko Sigur', 'DF', 'Hajduk Split', 'CRO'),
+  ('Mathieu Choinière', 'MF', 'Los Angeles FC', 'USA'),
+  ('Stephen Eustáquio', 'MF', 'Los Angeles FC', 'USA'),
+  ('Ismaël Koné', 'MF', 'Sassuolo', 'ITA'),
+  ('Liam Millar', 'MF', 'Hull City', 'ENG'),
+  ('Jacob Shaffelburg', 'MF', 'Los Angeles FC', 'USA'),
   ('Jonathan Osorio', 'MF', 'Toronto FC', 'CAN'),
-  ('Atiba Hutchinson', 'MF', 'İstanbul Başakşehir', 'TUR'),
-  ('Alphonso Davies', 'MF', 'Bayern Munich', 'GER'),
-  ('Jonathan David', 'FW', 'Lille', 'FRA'),
-  ('Cyle Larin', 'FW', 'Mallorca', 'ESP'),
-  ('Liam Millar', 'FW', 'Preston North End', 'ENG'),
-  ('Tajon Buchanan', 'FW', 'Inter Milan', 'ITA'),
-  ('Jacob Shaffelburg', 'FW', 'Nashville SC', 'USA'),
-  ('Lucas Cavallini', 'FW', 'Vancouver Whitecaps', 'CAN'),
-  ('Junior Hoilett', 'FW', 'Reading', 'ENG')
+  ('Nathan Saliba', 'MF', 'Anderlecht', 'BEL'),
+  ('Jayden Nelson', 'MF', 'Austin FC', 'USA'),
+  ('Cyle Larin', 'FW', 'Southampton', 'ENG'),
+  ('Jonathan David', 'FW', 'Juventus', 'ITA'),
+  ('Tani Oluwaseyi', 'FW', 'Villarreal', 'ESP'),
+  ('Tajon Buchanan', 'FW', 'Villarreal', 'ESP'),
+  ('Ali Ahmed', 'FW', 'Norwich City', 'ENG'),
+  ('Promise David', 'FW', 'Union Saint-Gilloise', 'BEL')
 ) AS p(name, position, club, club_country)
 WHERE t.code = 'CAN';
 
@@ -143,24 +151,32 @@ SELECT t.id_team, p.name, p.position, p.club, p.club_country
 FROM public.teams t
 CROSS JOIN (
   VALUES
-  ('Ibrahim Sehic', 'GK', 'Konyaspor', 'TUR'),
-  ('Kenan Piric', 'GK', 'AEK Larnaca', 'CYP'),
-  ('Sead Kolašinac', 'DF', 'Marseille', 'FRA'),
-  ('Stjepan Lončar', 'DF', 'Rijeka', 'CRO'),
-  ('Adis Jahović', 'DF', 'Sarajevo', 'BIH'),
-  ('Miralem Pjanić', 'MF', 'Sharjah', 'UAE'),
-  ('Rade Krunić', 'MF', 'Genoa', 'ITA'),
-  ('Amir Hadžiahmetović', 'MF', 'Konyaspor', 'TUR'),
-  ('Edin Džeko', 'FW', 'Fenerbahçe', 'TUR'),
-  ('Ermedin Demirović', 'FW', 'Stuttgart', 'GER'),
-  ('Miroslav Stevanović', 'FW', 'Servette', 'SUI'),
-  ('Benjamin Tahirović', 'FW', 'Hoffenheim', 'GER'),
-  ('Elvis Sarić', 'MF', 'Lech Poznań', 'POL'),
-  ('Anel Ahmedhodžić', 'DF', 'Sheffield United', 'ENG'),
-  ('Dennis Hadžikadunić', 'DF', 'Rostov', 'RUS'),
-  ('Edin Višća', 'FW', 'Trabzonspor', 'TUR'),
-  ('Mario Kvesić', 'MF', 'Kayserispor', 'TUR'),
-  ('Admir Lulić', 'MF', 'Sarajevo', 'BIH')
+  ('Nikola Vasilj', 'GK', 'FC St. Pauli', 'GER'),
+  ('Mladen Jurkas', 'GK', 'Borac Banja Luka', 'BIH'),
+  ('Martin Zlomislić', 'GK', 'Rijeka', 'CRO'),
+  ('Nihad Mujakić', 'DF', 'Gaziantep', 'TUR'),
+  ('Dennis Hadžikadunić', 'DF', 'Sampdoria', 'ITA'),
+  ('Tarik Muharemović', 'DF', 'Sassuolo', 'ITA'),
+  ('Sead Kolašinac', 'DF', 'Atalanta', 'ITA'),
+  ('Amar Dedić', 'DF', 'Benfica', 'POR'),
+  ('Nikola Katić', 'DF', 'Schalke 04', 'GER'),
+  ('Stjepan Radeljić', 'DF', 'Rijeka', 'CRO'),
+  ('Arjan Malić', 'DF', 'Sturm Graz', 'AUT'),
+  ('Benjamin Tahirović', 'MF', 'Brøndby', 'DEN'),
+  ('Armin Gigović', 'MF', 'Young Boys', 'SUI'),
+  ('Ivan Bašić', 'MF', 'Astana', 'KAZ'),
+  ('Ivan Šunjić', 'MF', 'Pafos', 'CYP'),
+  ('Amar Memić', 'MF', 'Viktoria Plzeň', 'CZE'),
+  ('Amir Hadžiahmetović', 'MF', 'Hull City', 'ENG'),
+  ('Dženis Burnić', 'MF', 'Karlsruher SC', 'GER'),
+  ('Ermin Mahmić', 'MF', 'Slovan Liberec', 'CZE'),
+  ('Samed Baždar', 'FW', 'Jagiellonia Białystok', 'POL'),
+  ('Ermedin Demirović', 'FW', 'VfB Stuttgart', 'GER'),
+  ('Edin Džeko', 'FW', 'Schalke 04', 'GER'),
+  ('Kerim Alajbegović', 'FW', 'Red Bull Salzburg', 'AUT'),
+  ('Esmir Bajraktarević', 'FW', 'PSV Eindhoven', 'NED'),
+  ('Haris Tabaković', 'FW', 'Borussia Mönchengladbach', 'GER'),
+  ('Jovo Lukić', 'FW', 'Universitatea Cluj', 'ROU')
 ) AS p(name, position, club, club_country)
 WHERE t.code = 'BIH';
 
@@ -169,24 +185,32 @@ SELECT t.id_team, p.name, p.position, p.club, p.club_country
 FROM public.teams t
 CROSS JOIN (
   VALUES
-  ('Saad Al-Sheeb', 'GK', 'Al-Sadd', 'QAT'),
-  ('Mishal Barsham', 'GK', 'Al-Sadd', 'QAT'),
-  ('Abdelkarim Hassan', 'DF', 'Al-Sadd', 'QAT'),
-  ('Boualem Khoukhi', 'DF', 'Al-Sadd', 'QAT'),
+  ('Mahmud Abunada', 'GK', 'Al-Rayyan', 'QAT'),
+  ('Salah Zakaria', 'GK', 'Al-Duhail', 'QAT'),
+  ('Meshaal Barsham', 'GK', 'Al-Sadd', 'QAT'),
   ('Pedro Miguel', 'DF', 'Al-Sadd', 'QAT'),
-  ('Homam Ahmed', 'DF', 'Al-Gharafa', 'QAT'),
-  ('Assim Madibo', 'MF', 'Al-Wakrah', 'QAT'),
-  ('Hassan Al-Haydos', 'MF', 'Al-Sadd', 'QAT'),
-  ('Akram Afif', 'FW', 'Al-Sadd', 'QAT'),
-  ('Almoez Ali', 'FW', 'Al-Duhail', 'QAT'),
-  ('Mohammed Muntari', 'FW', 'Al-Duhail', 'QAT'),
-  ('Yusuf Abdurisag', 'FW', 'Al-Arabi', 'QAT'),
+  ('Lucas Mendes', 'DF', 'Al-Wakrah', 'QAT'),
+  ('Issa Laye', 'DF', 'Al-Arabi', 'QAT'),
+  ('Jassem Gaber', 'DF', 'Al-Rayyan', 'QAT'),
+  ('Ayoub Al-Oui', 'DF', 'Al-Gharafa', 'QAT'),
+  ('Homam Ahmed', 'DF', 'Cultural Leonesa', 'ESP'),
+  ('Boualem Khoukhi', 'DF', 'Al-Sadd', 'QAT'),
+  ('Sultan Al-Brake', 'DF', 'Al-Duhail', 'QAT'),
+  ('Al-Hashmi Al-Hussain', 'DF', 'Al-Arabi', 'QAT'),
+  ('Abdulaziz Hatem', 'MF', 'Al-Rayyan', 'QAT'),
   ('Karim Boudiaf', 'MF', 'Al-Duhail', 'QAT'),
-  ('Ahmed Alaaeldin', 'FW', 'Al-Gharafa', 'QAT'),
-  ('Mohammed Waad', 'MF', 'Al-Sadd', 'QAT'),
-  ('Tarek Salman', 'DF', 'Al-Sadd', 'QAT'),
-  ('Bassam Al-Rawi', 'DF', 'Al-Rayyan', 'QAT'),
-  ('Ahmed Fadl', 'MF', 'Al-Arabi', 'QAT')
+  ('Ahmed Al-Ganehi', 'MF', 'Al-Gharafa', 'QAT'),
+  ('Ahmed Fathy', 'MF', 'Al-Arabi', 'QAT'),
+  ('Assim Madibo', 'MF', 'Al-Wakrah', 'QAT'),
+  ('Ahmed Alaaeldin', 'FW', 'Al-Rayyan', 'QAT'),
+  ('Edmilson Junior', 'FW', 'Al-Duhail', 'QAT'),
+  ('Mohammed Muntari', 'FW', 'Al-Gharafa', 'QAT'),
+  ('Hassan Al-Haydos', 'FW', 'Al-Sadd', 'QAT'),
+  ('Akram Afif', 'FW', 'Al-Sadd', 'QAT'),
+  ('Yusuf Abdurisag', 'FW', 'Al-Wakrah', 'QAT'),
+  ('Almoez Ali', 'FW', 'Al-Duhail', 'QAT'),
+  ('Tahsin Jamshid', 'FW', 'Al-Duhail', 'QAT'),
+  ('Mohamed Manai', 'FW', 'Al-Shamal', 'QAT')
 ) AS p(name, position, club, club_country)
 WHERE t.code = 'QAT';
 
@@ -195,24 +219,32 @@ SELECT t.id_team, p.name, p.position, p.club, p.club_country
 FROM public.teams t
 CROSS JOIN (
   VALUES
-  ('Yann Sommer', 'GK', 'Inter Milan', 'ITA'),
   ('Gregor Kobel', 'GK', 'Borussia Dortmund', 'GER'),
-  ('Manuel Akanji', 'DF', 'Manchester City', 'ENG'),
-  ('Ricardo Rodríguez', 'DF', 'Torino', 'ITA'),
-  ('Fabian Schär', 'DF', 'Newcastle United', 'ENG'),
-  ('Silvan Widmer', 'DF', 'Mainz', 'GER'),
-  ('Granit Xhaka', 'MF', 'Bayer Leverkusen', 'GER'),
-  ('Remo Freuler', 'MF', 'Bologna', 'ITA'),
-  ('Ruben Vargas', 'MF', 'Augsburg', 'GER'),
-  ('Xherdan Shaqiri', 'MF', 'Chicago Fire', 'USA'),
-  ('Breel Embolo', 'FW', 'Monaco', 'FRA'),
-  ('Noah Okafor', 'FW', 'Milan', 'ITA'),
-  ('Dan Ndoye', 'FW', 'Bologna', 'ITA'),
-  ('Zeki Amdouni', 'FW', 'Burnley', 'ENG'),
-  ('Michel Aebischer', 'MF', 'Bologna', 'ITA'),
+  ('Yvon Mvogo', 'GK', 'Lorient', 'FRA'),
+  ('Marvin Keller', 'GK', 'Young Boys', 'SUI'),
+  ('Miro Muheim', 'DF', 'Hamburger SV', 'GER'),
+  ('Silvan Widmer', 'DF', 'Mainz 05', 'GER'),
+  ('Nico Elvedi', 'DF', 'Borussia Mönchengladbach', 'GER'),
+  ('Manuel Akanji', 'DF', 'Inter Milan', 'ITA'),
+  ('Ricardo Rodriguez', 'DF', 'Real Betis', 'ESP'),
+  ('Eray Cömert', 'DF', 'Valencia', 'ESP'),
+  ('Aurèle Amenda', 'DF', 'Eintracht Frankfurt', 'GER'),
+  ('Luca Jaquez', 'DF', 'VfB Stuttgart', 'GER'),
   ('Denis Zakaria', 'MF', 'Monaco', 'FRA'),
-  ('Vincent Sierro', 'MF', 'Toulouse', 'FRA'),
-  ('Nico Elvedi', 'DF', 'Borussia Mönchengladbach', 'GER')
+  ('Remo Freuler', 'MF', 'Bologna', 'ITA'),
+  ('Johan Manzambi', 'MF', 'SC Freiburg', 'GER'),
+  ('Granit Xhaka', 'MF', 'Sunderland', 'ENG'),
+  ('Ardon Jashari', 'MF', 'Milan', 'ITA'),
+  ('Djibril Sow', 'MF', 'Sevilla', 'ESP'),
+  ('Michel Aebischer', 'MF', 'Bologna', 'ITA'),
+  ('Fabian Rieder', 'MF', 'FC Augsburg', 'GER'),
+  ('Breel Embolo', 'FW', 'Rennes', 'FRA'),
+  ('Dan Ndoye', 'FW', 'Nottingham Forest', 'ENG'),
+  ('Christian Fassnacht', 'FW', 'Young Boys', 'SUI'),
+  ('Rubén Vargas', 'FW', 'Sevilla', 'ESP'),
+  ('Noah Okafor', 'FW', 'Leeds United', 'ENG'),
+  ('Zeki Amdouni', 'FW', 'Burnley', 'ENG'),
+  ('Cedric Itten', 'FW', 'Fortuna Düsseldorf', 'GER')
 ) AS p(name, position, club, club_country)
 WHERE t.code = 'SUI';
 
@@ -1259,4 +1291,4 @@ WHERE t.code = 'PAN';
 INSERT INTO public.tournament_results (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 COMMIT;
 
--- Total: 864 players across 48 teams
+-- Total: 896 players across 48 teams
