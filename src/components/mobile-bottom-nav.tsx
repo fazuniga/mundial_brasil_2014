@@ -3,7 +3,7 @@ import { MaterialIcon } from "@/components/material-icon";
 import { cn } from "@/lib/utils";
 
 type MobileBottomNavProps = {
-  active?: "partidos" | "apuestas" | "clasificacion" | "perfil" | "admin";
+  active?: "partidos" | "apuestas" | "estadisticas" | "clasificacion" | "perfil" | "admin";
   isAdmin?: boolean;
 };
 
@@ -66,6 +66,29 @@ export function MobileBottomNav({
           )}
         >
           Apuestas
+        </span>
+      </Link>
+
+      <Link
+        href="/estadisticas"
+        className={cn(
+          itemClass,
+          compact ? "p-1" : "p-2",
+          active === "estadisticas" ? "text-primary" : "text-on-surface-variant",
+        )}
+      >
+        <MaterialIcon
+          name="query_stats"
+          filled={active === "estadisticas"}
+          className={cn("mb-0.5", compact ? "text-xl" : "mb-1 text-2xl")}
+        />
+        <span
+          className={cn(
+            compact ? "text-[10px] leading-tight" : "text-xs",
+            active === "estadisticas" ? "font-bold" : "font-medium",
+          )}
+        >
+          Estadísticas
         </span>
       </Link>
 
