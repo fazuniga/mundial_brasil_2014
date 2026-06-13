@@ -176,6 +176,7 @@ CROSS JOIN (
   ('Salah Zakaria', 'GK', 'Al-Duhail', 'QAT'),
   ('Meshaal Barsham', 'GK', 'Al-Sadd', 'QAT'),
   ('Pedro Miguel', 'DF', 'Al-Sadd', 'QAT'),
+  ('Boualem Khoukhi', 'DF', 'Al-Sadd', 'QAT'),
   ('Lucas Mendes', 'DF', 'Al-Wakrah', 'QAT'),
   ('Issa Laye', 'DF', 'Al-Arabi', 'QAT'),
   ('Jassem Gaber', 'DF', 'Al-Rayyan', 'QAT'),
@@ -1263,4 +1264,4 @@ WHERE t.code = 'PAN';
 INSERT INTO public.tournament_results (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 COMMIT;
 
--- Total: 867 players across 48 teams
+-- Total: 868 players across 48 teams
