@@ -15,7 +15,7 @@ CROSS JOIN (
   ('Tomáš Holeš', 'DF', 'Slavia Prague', 'CZE'),
   ('Robin Hranáč', 'DF', 'TSG Hoffenheim', 'GER'),
   ('Štěpán Chaloupek', 'DF', 'Slavia Prague', 'CZE'),
-  ('Ladislav Krejčí', 'DF', 'Wolverhampton', 'ENG'),
+  ('Ladislav Krejčí', 'DF', 'Wolverhampton Wanderers', 'ENG'),
   ('David Jurásek', 'DF', 'Slavia Prague', 'CZE'),
   ('Vladimír Darida', 'MF', 'Hradec Králové', 'CZE'),
   ('Alexandr Sojka', 'MF', 'Viktoria Plzeň', 'CZE'),

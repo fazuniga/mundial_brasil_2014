@@ -74,6 +74,7 @@ export const PLAYER_SQUADS = {
     ["Robin Hranáč", "DF", "TSG Hoffenheim", "GER"],
     ["Vladimír Coufal", "DF", "TSG Hoffenheim", "GER"],
     ["Štěpán Chaloupek", "DF", "Slavia Prague", "CZE"],
+    ["Ladislav Krejčí", "DF", "Wolverhampton Wanderers", "ENG"],
     ["Vladimír Darida", "MF", "Hradec Králové", "CZE"],
     ["Lukáš Červ", "MF", "Viktoria Plzeň", "CZE"],
     ["Lukáš Provod", "MF", "Slavia Prague", "CZE"],
@@ -124,6 +125,7 @@ export const PLAYER_SQUADS = {
     ["Edin Džeko", "FW", "Schalke 04", "GER"],
     ["Kerim Alajbegović", "FW", "Red Bull Salzburg", "AUT"],
     ["Esmir Bajraktarević", "FW", "PSV Eindhoven", "NED"],
+    ["Jovo Lukić", "FW", "FC Universitatea Cluj", "ROU"],
   ],
   QAT: [
     ["Mahmud Abunada", "GK", "Al-Rayyan", "QAT"],
@@ -279,6 +281,7 @@ export const PLAYER_SQUADS = {
     ["Miguel Almirón", "MF", "Atlanta United FC", "USA"],
     ["Maurício", "MF", "Palmeiras", "BRA"],
     ["Andrés Cubas", "MF", "Vancouver Whitecaps FC", "CAN"],
+    ["Damián Bobadilla", "MF", "São Paulo", "BRA"],
     ["Antonio Sanabria", "FW", "Cremonese", "PAR"],
     ["Kaku", "FW", "Al Ain", "UAE"],
     ["Álex Arce", "FW", "Independiente Rivadavia", "PAR"],

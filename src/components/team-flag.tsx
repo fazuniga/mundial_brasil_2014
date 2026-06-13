@@ -1,3 +1,5 @@
+"use client";
+
 import { teamFlagUrl, teamInitials } from "@/lib/team-display";
 import { cn } from "@/lib/utils";
 

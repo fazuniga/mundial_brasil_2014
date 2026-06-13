@@ -13,7 +13,9 @@ type AdminSpecialBetsToggleProps = {
   settings: SpecialBetsSettings;
 };
 
-export function AdminSpecialBetsToggle({ settings: initialSettings }: AdminSpecialBetsToggleProps) {
+export function AdminSpecialBetsToggle({
+  settings: initialSettings,
+}: AdminSpecialBetsToggleProps) {
   const router = useRouter();
   const [settings, setSettings] = useState(initialSettings);
   const [saving, setSaving] = useState(false);

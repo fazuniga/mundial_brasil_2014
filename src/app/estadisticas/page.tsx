@@ -4,7 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { MatchPredictionStatsList } from "@/components/closed-match-prediction-stats-list";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SiteHeader } from "@/components/site-header";
+import { SpecialBetsPredictionStats } from "@/components/special-bets-prediction-stats";
 import type { MatchPredictionStatsRow } from "@/lib/closed-match-prediction-stats";
+import { fetchSpecialBetsPredictionStats } from "@/lib/fetch-special-bets-stats";
 import { buildResultsByMatch, type MatchResultScore } from "@/lib/home-fixtures";
 import { buildGoalsByMatch } from "@/lib/match-goals-display";
 
@@ -43,6 +45,7 @@ export default async function EstadisticasPage() {
     { data: matchStatsRaw, error: matchStatsError },
     { data: resultsRaw },
     { data: goalsRaw },
+    specialBetsPredictionStats,
   ] = await Promise.all([
     supabase
       .from("v_match_prediction_stats")
@@ -57,6 +60,7 @@ export default async function EstadisticasPage() {
       .select("id_goal, id_match, minute, is_own_goal, players(name, teams(code))")
       .order("id_match")
       .order("minute"),
+    fetchSpecialBetsPredictionStats(supabase),
   ]);
 
   const matchStats = sortMatchStats((matchStatsRaw ?? []) as MatchPredictionStatsRow[]);
@@ -80,6 +84,12 @@ export default async function EstadisticasPage() {
             Pronósticos agregados por partido · rondas con pronósticos activos
           </p>
         </header>
+
+        {specialBetsPredictionStats ? (
+          <section className="light-surface-panel overflow-hidden rounded-xl border border-outline-variant/60 bg-white shadow-sm">
+            <SpecialBetsPredictionStats stats={specialBetsPredictionStats} />
+          </section>
+        ) : null}
 
         {matchStatsError ? (
           <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 font-geist text-sm text-destructive">

@@ -151,21 +151,21 @@ export function AdminMatchGoals({
               key={goal.id_goal}
               className="flex items-center justify-between gap-3 px-4 py-1.5"
             >
-              <div className="flex min-w-0 items-center gap-2">
+              <div className="flex min-w-0 items-center gap-1">
                 {player?.team_code ? (
                   <TeamFlag
                     code={player.team_code}
                     country={player.team_country}
                   />
                 ) : null}
-                <p className="font-geist text-base text-on-surface">
+                <p className="font-geist text-xs sm:text-sm text-on-surface">
                   {goal.player_name ?? `Jugador ${goal.id_player}`}
                   {goal.is_own_goal ? (
-                    <span className="ml-1 text-sm text-accent">(autogol)</span>
+                    <span className="ml-1 text-xs sm:text-sm text-accent">(autogol)</span>
                   ) : null}
                 </p>
-                <span className="text-sm text-on-surface-variant">·</span>
-                <p className="font-geist text-sm text-on-surface-variant">
+                <span className="text-xs sm:text-sm text-on-surface-variant">·</span>
+                <p className="font-geist text-xs sm:text-sm text-on-surface-variant">
                   Minuto {goal.minute}
                 </p>
               </div>
