@@ -28,7 +28,7 @@ export function AdminTournamentFinals({
         </div>
       </div>
 
-      <div className="divide-y divide-border/40">
+      <div className="divide-y divide-border/40 flex flex-col md:flex-row gap-4">
         <AdminTournamentWinner summary={winnerSummary} />
         <AdminTournamentScorer summary={topScorerSummary} />
       </div>

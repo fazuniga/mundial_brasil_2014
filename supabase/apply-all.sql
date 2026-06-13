@@ -193,6 +193,11 @@ CREATE POLICY "Admins update pools" ON public.pools FOR UPDATE TO authenticated
   USING (public.is_current_user_admin())
   WITH CHECK (public.is_current_user_admin());
 
+CREATE POLICY "Admins manage players" ON public.players
+  FOR ALL TO authenticated
+  USING (public.is_current_user_admin())
+  WITH CHECK (public.is_current_user_admin());
+
 -- Predictions: only pool owner
 CREATE POLICY "Predictions select own pool" ON public.predictions FOR SELECT TO authenticated
   USING (EXISTS (SELECT 1 FROM public.pools p WHERE p.id_pool = predictions.id_pool AND p.owner_id = auth.uid()));

@@ -4,9 +4,16 @@ import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SiteHeader } from "@/components/site-header";
 import { AdminClient } from "@/components/admin/admin-client";
 import { AdminPoolsSection } from "@/components/admin/admin-pools-section";
+import { AdminSquadsSection } from "@/components/admin/admin-squads-section";
 import { AdminRoundPhases } from "@/components/admin/admin-round-phases";
 import type { FixtureRow, PlayerRow } from "@/lib/predictions-types";
-import type { AdminFixtureRow, AdminPoolRow, MatchGoalRow, MatchResultRow } from "@/lib/admin-types";
+import type {
+  AdminFixtureRow,
+  AdminPoolRow,
+  AdminTeamRow,
+  MatchGoalRow,
+  MatchResultRow,
+} from "@/lib/admin-types";
 import { filterAdminVisibleFixtures } from "@/lib/admin-utils";
 
 export default async function AdminPage() {
@@ -38,6 +45,7 @@ export default async function AdminPage() {
     { data: topScorerSummary },
     { data: winnerSummaryRaw },
     { data: poolsRaw },
+    { data: teamsRaw },
     { data: specialBetsSettingsRaw },
   ] = await Promise.all([
     supabase
@@ -74,6 +82,11 @@ export default async function AdminPage() {
       .select("id_pool, description, is_paid_group_phase, is_paid_knockout, owner_id, profiles(first_name, last_name, username)")
       .order("id_pool"),
     supabase
+      .from("teams")
+      .select("id_team, country, code, groups(group_code)")
+      .not("id_group", "is", null)
+      .order("country"),
+    supabase
       .from("v_tournament_bet_open")
       .select("tournament_bet_open, tournament_bet_auto_open, special_bets_open_override")
       .single(),
@@ -85,6 +98,23 @@ export default async function AdminPage() {
     special_bets_open_override:
       specialBetsSettingsRaw?.special_bets_open_override ?? null,
   };
+
+  const adminTeams: AdminTeamRow[] = (teamsRaw ?? [])
+    .map((row) => {
+      const nested = row.groups as { group_code: string } | { group_code: string }[] | null;
+      const group = Array.isArray(nested) ? nested[0] : nested;
+      return {
+        id_team: row.id_team,
+        country: row.country,
+        code: row.code,
+        group_code: group?.group_code ?? null,
+      };
+    })
+    .sort((a, b) => {
+      const groupCmp = (a.group_code ?? "").localeCompare(b.group_code ?? "");
+      if (groupCmp !== 0) return groupCmp;
+      return a.country.localeCompare(b.country, "es");
+    });
 
   const adminPools: AdminPoolRow[] = (poolsRaw ?? []).map((row) => {
     const nested = row.profiles as
@@ -159,6 +189,8 @@ export default async function AdminPage() {
         <AdminRoundPhases rounds={roundsRaw ?? []} />
 
         <AdminPoolsSection pools={adminPools} />
+
+        <AdminSquadsSection teams={adminTeams} players={players} />
 
         <AdminClient
           fixtures={fixtures}

@@ -66,7 +66,7 @@ export function AdminClient({
 }: AdminClientProps) {
   const router = useRouter();
   const matchIds = useMemo(() => fixtures.map((f) => f.id_match), [fixtures]);
-  const [viewMode, setViewMode] = useState<AdminFixtureViewMode>("group");
+  const [viewMode, setViewMode] = useState<AdminFixtureViewMode>("game");
   const sections = useMemo(() => {
     if (viewMode === "game") {
       return groupAdminFixturesByGame(fixtures);
@@ -265,14 +265,6 @@ export function AdminClient({
 
   return (
     <div className="light-surface-panel flex flex-col gap-4">
-      <div className="rounded-xl border border-border/50 bg-white px-5 py-4 shadow-sm">
-        <p className="font-geist text-base text-on-surface">
-          <span className="font-semibold tabular-nums text-primary">{savedCount}</span>
-          {" "}
-          de {totalCount} partidos con resultado cargado
-        </p>
-      </div>
-
       {error ? (
         <Alert variant="destructive">
           <p className="font-geist text-base">{error}</p>
@@ -293,7 +285,6 @@ export function AdminClient({
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-1.5">
-          <p className="font-geist text-sm font-medium text-on-surface">Organizar</p>
           <div
             className="inline-flex w-fit rounded-lg border border-border/60 bg-slate-50 p-1"
             role="group"
@@ -307,7 +298,7 @@ export function AdminClient({
               aria-pressed={viewMode === "group"}
               onClick={() => setViewMode("group")}
             >
-              Por grupo
+              Ver por grupo
             </Button>
             <Button
               type="button"
@@ -317,7 +308,7 @@ export function AdminClient({
               aria-pressed={viewMode === "game"}
               onClick={() => setViewMode("game")}
             >
-              Por partido
+              Ver por partido
             </Button>
           </div>
         </div>
@@ -331,11 +322,19 @@ export function AdminClient({
       </div>
 
       {searchQuery.trim() && filteredSections.length === 0 ? (
-        <p className="font-geist text-base text-on-surface-variant">
+        <p className="font-geist text-base text-white">
           Ningún partido coincide con &quot;{searchQuery.trim()}&quot;. Prueba con el
           nombre del equipo, grupo o fase.
         </p>
       ) : null}
+      
+      <div className="rounded-xl border border-border/50 bg-white px-5 py-4 shadow-sm">
+        <p className="font-geist text-base text-on-surface">
+          <span className="font-semibold tabular-nums text-primary">{savedCount}</span>
+          {" "}
+          de {totalCount} partidos con resultado cargado
+        </p>
+      </div>
 
       {filteredSections.map((section) => (
         <AdminMatchSection

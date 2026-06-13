@@ -58,6 +58,13 @@ export type TournamentWinnerSummary = {
   winner_code: string | null;
 };
 
+export type AdminTeamRow = {
+  id_team: number;
+  country: string;
+  code: string;
+  group_code: string | null;
+};
+
 export type AdminPoolRow = {
   id_pool: number;
   description: string;
