@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { MaterialIcon } from "@/components/material-icon";
 import { GroupPredictionsTable } from "@/components/predictions/group-predictions-table";
@@ -26,6 +26,7 @@ import {
   ensureUserPool,
   filterSectionsBySearch,
   getMaxEnabledPredictionRound,
+  groupFixturesByGame,
   groupFixturesBySection,
   isPredictionSectionDefaultOpen,
   isKnockoutFixture,
@@ -47,6 +48,8 @@ import {
   type TopScorerDraft,
   type WinnerDraft,
 } from "@/lib/predictions-utils";
+
+type FixtureViewMode = "group" | "game";
 
 type PredictionsClientProps = {
   fixtures: FixtureRow[];
@@ -110,7 +113,13 @@ export function PredictionsClient({
   isAuthenticated,
 }: PredictionsClientProps) {
   const router = useRouter();
-  const sections = useMemo(() => groupFixturesBySection(fixtures), [fixtures]);
+  const [viewMode, setViewMode] = useState<FixtureViewMode>("group");
+  const sections = useMemo(() => {
+    if (viewMode === "game") {
+      return groupFixturesByGame(fixtures);
+    }
+    return groupFixturesBySection(fixtures);
+  }, [fixtures, viewMode]);
   const maxEnabledRound = useMemo(
     () => getMaxEnabledPredictionRound(fixtures),
     [fixtures],
@@ -152,6 +161,22 @@ export function PredictionsClient({
   const [topScorerSaved, setTopScorerSaved] = useState(() =>
     isTopScorerSaved(tournamentPrediction ?? undefined),
   );
+
+  const tournamentSnapshot = tournamentPrediction
+    ? `${poolId}:${tournamentPrediction.winner_team_id}:${tournamentPrediction.top_scorer_player_id}:${tournamentPrediction.top_scorer_goals}`
+    : `${poolId ?? "guest"}:empty`;
+
+  useEffect(() => {
+    const winner = winnerDraftFromRow(tournamentPrediction ?? undefined);
+    const topScorer = topScorerDraftFromRow(tournamentPrediction ?? undefined);
+    setWinnerDraft(winner);
+    setWinnerBaseline(winner);
+    setTopScorerDraft(topScorer);
+    setTopScorerBaseline(topScorer);
+    setWinnerSaved(isWinnerSaved(tournamentPrediction ?? undefined));
+    setTopScorerSaved(isTopScorerSaved(tournamentPrediction ?? undefined));
+  }, [tournamentSnapshot]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -351,7 +376,7 @@ export function PredictionsClient({
         return;
       }
 
-      const resolvedPoolId = poolId ?? (await ensureUserPool(user.id));
+      const resolvedPoolId = poolId ?? (await ensureUserPool(supabase, user.id));
 
       if (toSave.length > 0) {
         const rows = toSave.map((row) => ({
@@ -459,12 +484,6 @@ export function PredictionsClient({
           </Alert>
         )}
 
-        <PredictionsSearchBar
-          value={searchQuery}
-          onChange={setSearchQuery}
-          resultCount={searchQuery.trim() ? filteredMatchCount : undefined}
-        />
-
         <div className="lg:hidden">
           <ScoringRulesCard rules={scoringRules} collapsible />
         </div>
@@ -483,6 +502,45 @@ export function PredictionsClient({
             topScorerSaved={topScorerSaved}
           />
         )}
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-1.5">
+            <p className="font-geist text-sm font-medium text-on-surface">Organizar</p>
+            <div
+              className="inline-flex w-fit rounded-lg border border-border/60 bg-slate-50 p-1"
+              role="group"
+              aria-label="Organizar partidos"
+            >
+              <Button
+                type="button"
+                size="sm"
+                variant={viewMode === "group" ? "default" : "ghost"}
+                className={viewMode === "group" ? "text-white" : "text-on-surface"}
+                aria-pressed={viewMode === "group"}
+                onClick={() => setViewMode("group")}
+              >
+                Por grupo
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={viewMode === "game" ? "default" : "ghost"}
+                className={viewMode === "game" ? "text-white" : "text-on-surface"}
+                aria-pressed={viewMode === "game"}
+                onClick={() => setViewMode("game")}
+              >
+                Por partido
+              </Button>
+            </div>
+          </div>
+
+          <PredictionsSearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            resultCount={searchQuery.trim() ? filteredMatchCount : undefined}
+            className="min-w-0 flex-1 sm:max-w-md"
+          />
+        </div>
 
         {searchQuery.trim() && filteredSections.length === 0 ? (
           <p className="font-geist text-sm text-on-surface-variant">

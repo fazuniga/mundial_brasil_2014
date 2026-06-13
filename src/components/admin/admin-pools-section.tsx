@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import {
+  CollapsibleInlineHeader,
+  CollapsibleSection,
+} from "@/components/collapsible-section";
 import { MaterialIcon } from "@/components/material-icon";
 import { Alert } from "@/components/ui/alert";
 import type { AdminPoolRow } from "@/lib/admin-types";
@@ -73,113 +77,121 @@ export function AdminPoolsSection({ pools: initialPools }: AdminPoolsSectionProp
     router.refresh();
   }
 
+  const paymentSummaryDetail =
+    pools.length === 0
+      ? "Sin pollas registradas"
+      : `Fase de Grupos: ${groupPaidCount} de ${pools.length} pagadas · Fases eliminatorias: ${knockoutPaidCount} de ${pools.length} pagadas`;
+
   return (
-    <section className="rounded-xl border border-border/50 bg-white px-5 py-4 shadow-sm">
-      <div className="flex flex-col gap-1">
-        <h2 className="font-headline text-lg font-bold text-primary">
-          Pagos de pollas
-        </h2>
-        <p className="font-geist text-sm text-on-surface-variant">
+    <CollapsibleSection
+      title="Pagos de pollas"
+      subtitle={paymentSummaryDetail}
+      titleContent={
+        <CollapsibleInlineHeader
+          title="Pagos de pollas"
+          detail={paymentSummaryDetail}
+          layout="responsive"
+          className="text-black [&_span]:text-black!"
+        />
+      }
+      defaultOpen={false}
+      className="admin-light-surface bg-white"
+      headerClassName="bg-white transition-[background-color] hover:bg-surface-container-lowest/60"
+    >
+      <div className="flex flex-col gap-4 px-4 py-4">
+        <p className="font-geist text-xs md:text-sm text-on-surface-variant">
           Marca si cada participante pagó la Fase de Grupos y las fases
           eliminatorias por separado.
         </p>
-        <div className="mt-1 flex flex-col gap-1 border border-black/10 items-start rounded-md shadow-sm bg-gray-50 p-2 px-3">
-          <p className="font-geist text-xs text-black">
-            Fase de Grupos: {groupPaidCount} de {pools.length} pagadas
-          </p>
-          <p className="font-geist text-xs text-black">
-            Fases eliminatorias: {knockoutPaidCount} de {pools.length} pagadas
-          </p>
-        </div>
-      </div>
 
-      {error ? (
-        <Alert variant="destructive" className="mt-4">
-          <p className="font-geist text-sm">{error}</p>
-        </Alert>
-      ) : null}
-      {success ? (
-        <Alert className="mt-4">
-          <p className="font-geist text-sm">{success}</p>
-        </Alert>
-      ) : null}
+        {error ? (
+          <Alert variant="destructive">
+            <p className="font-geist text-sm">{error}</p>
+          </Alert>
+        ) : null}
+        {success ? (
+          <Alert>
+            <p className="font-geist text-sm">{success}</p>
+          </Alert>
+        ) : null}
 
-      {pools.length === 0 ? (
-        <p className="mt-4 font-geist text-sm text-on-surface-variant">
-          Aún no hay pollas registradas.
-        </p>
-      ) : (
-        <ul className="mt-4 divide-y divide-black/10">
-          {pools.map((pool) => {
-            const hasPending =
-              !pool.is_paid_group_phase || !pool.is_paid_knockout;
-            return (
-              <li
-                key={pool.id_pool}
-                className={cn(
-                  "flex flex-col py-2 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between",
-                  hasPending && "opacity-90",
-                )}
-              >
-                <div className="min-w-0">
-                  <div className="flex flex-row gap-1 items-center font-geist font-medium text-black">
-                    <span>{ownerLabel(pool)}</span>
-                    <span>·</span>
-                    {pool.username ? <span className="font-mono text-xs text-on-surface-variant">@{pool.username}</span> : null}
+        {pools.length === 0 ? (
+          <p className="font-geist text-sm text-on-surface-variant">
+            Aún no hay pollas registradas.
+          </p>
+        ) : (
+          <ul className="divide-y divide-black/10">
+            {pools.map((pool) => {
+              const hasPending =
+                !pool.is_paid_group_phase || !pool.is_paid_knockout;
+              return (
+                <li
+                  key={pool.id_pool}
+                  className={cn(
+                    "flex flex-col py-2 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between",
+                    hasPending && "opacity-90",
+                  )}
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-row gap-1 items-center font-geist font-medium text-black">
+                      <span>{ownerLabel(pool)}</span>
+                      <span>·</span>
+                      {pool.username ? <span className="font-mono text-xs text-on-surface-variant">@{pool.username}</span> : null}
+                    </div>
                   </div>
-                </div>
-                <div className="flex shrink-0 flex-col gap-0.5 sm:items-end">
-                  {PAYMENT_PHASES.map(({ field, label }) => {
-                    const isPaid = pool[field];
-                    const isSaving = savingKey === `${pool.id_pool}:${field}`;
-                    return (
-                      <label
-                        key={field}
-                        className="flex w-full cursor-pointer items-center justify-between gap-2"
-                      >
-                        <span className="font-geist text-xs text-on-surface-variant">
-                          {label}: {isPaid ? "Pagada" : "Pendiente"}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            role="switch"
-                            aria-label={`Pago ${label} de ${ownerLabel(pool)}`}
-                            checked={isPaid}
-                            disabled={isSaving}
-                            onChange={(e) =>
-                              handleTogglePaid(pool.id_pool, field, e.target.checked)
-                            }
-                            className="h-5 w-9 cursor-pointer appearance-none rounded-full border border-outline-variant bg-surface-container-high transition-colors checked:border-primary checked:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
-                          />
-                          {isSaving ? (
-                            <MaterialIcon
-                              name="progress_activity"
-                              className="animate-spin text-base text-on-surface-variant"
+                  <div className="flex shrink-0 flex-col gap-0.5 sm:items-end">
+                    {PAYMENT_PHASES.map(({ field, label }) => {
+                      const isPaid = pool[field];
+                      const isSaving = savingKey === `${pool.id_pool}:${field}`;
+                      return (
+                        <label
+                          key={field}
+                          className="flex w-full cursor-pointer items-center justify-between gap-2"
+                        >
+                          <span className="font-geist text-xs text-on-surface-variant">
+                            {label}: {isPaid ? "Pagada" : "Pendiente"}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              role="switch"
+                              aria-label={`Pago ${label} de ${ownerLabel(pool)}`}
+                              checked={isPaid}
+                              disabled={isSaving}
+                              onChange={(e) =>
+                                handleTogglePaid(pool.id_pool, field, e.target.checked)
+                              }
+                              className="h-5 w-9 cursor-pointer appearance-none rounded-full border border-outline-variant bg-surface-container-high transition-colors checked:border-primary checked:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
                             />
-                          ) : isPaid ? (
-                            <MaterialIcon
-                              name="paid"
-                              className="text-base text-primary"
-                              aria-hidden
-                            />
-                          ) : (
-                            <MaterialIcon
-                              name="pending"
-                              className="text-base text-on-surface-variant"
-                              aria-hidden
-                            />
-                          )}
-                        </div>
-                      </label>
-                    );
-                  })}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </section>
+                            {isSaving ? (
+                              <MaterialIcon
+                                name="progress_activity"
+                                className="animate-spin text-base text-on-surface-variant"
+                              />
+                            ) : isPaid ? (
+                              <MaterialIcon
+                                name="paid"
+                                className="text-base text-primary"
+                                aria-hidden
+                              />
+                            ) : (
+                              <MaterialIcon
+                                name="pending"
+                                className="text-base text-on-surface-variant"
+                                aria-hidden
+                              />
+                            )}
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </CollapsibleSection>
   );
 }

@@ -2,7 +2,7 @@ import {
   isFirstGoalRangeKey,
   type FirstGoalRangeKey,
 } from "@/lib/first-goal-ranges";
-import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { MATCH_TIMEZONE, parseMatchKickoff } from "@/lib/match-timezone";
 import type { FixtureRow, PredictionRow } from "@/lib/predictions-types";
 
@@ -82,9 +82,10 @@ export function isPredictionSectionDefaultOpen(
   return hasEnabledFixture && sectionIdRound <= maxEnabledRound;
 }
 
-export async function ensureUserPool(userId: string): Promise<number> {
-  const supabase = createClient();
-
+export async function ensureUserPool(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<number> {
   const { data: existingPools, error: poolError } = await supabase
     .from("pools")
     .select("id_pool")
@@ -177,6 +178,19 @@ export function groupFixturesBySection(fixtures: FixtureRow[]): FixtureGroup[] {
   );
 
   return [...groups, ...knockouts];
+}
+
+/** Single section with all fixtures ordered by kickoff (match_date, match_time). */
+export function groupFixturesByGame(fixtures: FixtureRow[]): FixtureGroup[] {
+  if (fixtures.length === 0) return [];
+
+  return [
+    {
+      key: "all-matches",
+      title: "Partidos",
+      fixtures: sortGroupFixtures(fixtures),
+    },
+  ];
 }
 
 export type PredictionSectionTitleMeta = {

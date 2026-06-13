@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { ClosedMatchPredictionStatsList } from "@/components/closed-match-prediction-stats-list";
+import { MatchPredictionStatsList } from "@/components/closed-match-prediction-stats-list";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SiteHeader } from "@/components/site-header";
-import type { ClosedMatchPredictionStatsRow } from "@/lib/closed-match-prediction-stats";
+import type { MatchPredictionStatsRow } from "@/lib/closed-match-prediction-stats";
 import { buildResultsByMatch, type MatchResultScore } from "@/lib/home-fixtures";
 import { buildGoalsByMatch } from "@/lib/match-goals-display";
 
@@ -12,6 +12,14 @@ export const metadata: Metadata = {
   title: "Estadísticas · Polla Mundial 2026",
   description: "Rondas con pronósticos activos · cerrados 60 min antes del inicio",
 };
+
+function sortMatchStats(rows: MatchPredictionStatsRow[]): MatchPredictionStatsRow[] {
+  return [...rows].sort((a, b) => {
+    const dateCompare = a.match_date.localeCompare(b.match_date);
+    if (dateCompare !== 0) return dateCompare;
+    return a.match_time.localeCompare(b.match_time);
+  });
+}
 
 export default async function EstadisticasPage() {
   const supabase = await createClient();
@@ -32,17 +40,17 @@ export default async function EstadisticasPage() {
   isAdmin = profile?.is_admin ?? false;
 
   const [
-    { data: closedMatchesRaw, error: closedMatchesError },
+    { data: matchStatsRaw, error: matchStatsError },
     { data: resultsRaw },
     { data: goalsRaw },
   ] = await Promise.all([
     supabase
-      .from("v_closed_match_prediction_stats")
+      .from("v_match_prediction_stats")
       .select(
         "id_match, id_round, name_round, group_code, dow, match_date, match_time, home_code, home_country, away_code, away_country, city, stadium, round_predictions_enabled, predictions_open, bet_count, home_win_count, away_win_count, draw_count, with_goals_count, no_goals_count",
       )
-      .order("match_date", { ascending: false })
-      .order("match_time", { ascending: false }),
+      .order("match_date")
+      .order("match_time"),
     supabase.from("match_results").select("id_match, goals_home, goals_away"),
     supabase
       .from("match_goals")
@@ -51,7 +59,7 @@ export default async function EstadisticasPage() {
       .order("minute"),
   ]);
 
-  const closedMatches = (closedMatchesRaw ?? []) as ClosedMatchPredictionStatsRow[];
+  const matchStats = sortMatchStats((matchStatsRaw ?? []) as MatchPredictionStatsRow[]);
   const resultsByMatch = buildResultsByMatch(
     (resultsRaw ?? []) as MatchResultScore[],
   );
@@ -69,17 +77,17 @@ export default async function EstadisticasPage() {
             Estadísticas
           </h1>
           <p className="font-geist max-w-2xl text-sm text-on-surface-variant">
-            Rondas con pronósticos activos · cerrados 60 min antes del inicio
+            Pronósticos agregados por partido · rondas con pronósticos activos
           </p>
         </header>
 
-        {closedMatchesError ? (
+        {matchStatsError ? (
           <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 font-geist text-sm text-destructive">
-            No se pudieron cargar los pronósticos cerrados. Vuelve a intentar más tarde.
+            No se pudieron cargar las estadísticas. Vuelve a intentar más tarde.
           </div>
         ) : (
-          <ClosedMatchPredictionStatsList
-            rows={closedMatches}
+          <MatchPredictionStatsList
+            rows={matchStats}
             resultsByMatch={resultsByMatch}
             goalsByMatch={goalsByMatch}
           />

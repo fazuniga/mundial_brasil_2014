@@ -68,6 +68,12 @@ export type AdminPoolRow = {
   username: string | null;
 };
 
+export type SpecialBetsSettings = {
+  tournament_bet_open: boolean;
+  tournament_bet_auto_open: boolean;
+  special_bets_open_override: boolean | null;
+};
+
 export type AdminClientProps = {
   fixtures: AdminFixtureRow[];
   resultsByMatch: Record<number, MatchResultRow>;
@@ -75,4 +81,5 @@ export type AdminClientProps = {
   players: PlayerRow[];
   topScorerSummary: TournamentTopScorerSummary | null;
   winnerSummary: TournamentWinnerSummary | null;
+  specialBetsSettings: SpecialBetsSettings;
 };

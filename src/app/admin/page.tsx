@@ -38,6 +38,7 @@ export default async function AdminPage() {
     { data: topScorerSummary },
     { data: winnerSummaryRaw },
     { data: poolsRaw },
+    { data: specialBetsSettingsRaw },
   ] = await Promise.all([
     supabase
       .from("v_fixture_resolved")
@@ -72,7 +73,18 @@ export default async function AdminPage() {
       .from("pools")
       .select("id_pool, description, is_paid_group_phase, is_paid_knockout, owner_id, profiles(first_name, last_name, username)")
       .order("id_pool"),
+    supabase
+      .from("v_tournament_bet_open")
+      .select("tournament_bet_open, tournament_bet_auto_open, special_bets_open_override")
+      .single(),
   ]);
+
+  const specialBetsSettings = {
+    tournament_bet_open: specialBetsSettingsRaw?.tournament_bet_open ?? true,
+    tournament_bet_auto_open: specialBetsSettingsRaw?.tournament_bet_auto_open ?? true,
+    special_bets_open_override:
+      specialBetsSettingsRaw?.special_bets_open_override ?? null,
+  };
 
   const adminPools: AdminPoolRow[] = (poolsRaw ?? []).map((row) => {
     const nested = row.profiles as
@@ -129,7 +141,7 @@ export default async function AdminPage() {
   return (
     <>
       <SiteHeader userEmail={user.email} isAdmin activeNav="perfil" />
-      <main className="mx-auto flex w-full max-w-7xl flex-col gap-section-gap px-gutter-md py-24 md:pb-8">
+      <main className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-gutter-md py-24 md:pb-8">
         <header className="space-y-3">
           <p className="font-geist text-sm font-semibold uppercase tracking-widest text-accent">
             Administración
@@ -155,6 +167,7 @@ export default async function AdminPage() {
           players={players}
           topScorerSummary={topScorerSummary}
           winnerSummary={winnerSummaryRaw}
+          specialBetsSettings={specialBetsSettings}
         />
       </main>
       <MobileBottomNav active="admin" isAdmin />

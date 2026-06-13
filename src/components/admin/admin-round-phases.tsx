@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import {
+  CollapsibleInlineHeader,
+  CollapsibleSection,
+} from "@/components/collapsible-section";
 import { MaterialIcon } from "@/components/material-icon";
 import { Alert } from "@/components/ui/alert";
 import type { RoundPhaseRow } from "@/lib/predictions-types";
@@ -55,78 +59,90 @@ export function AdminRoundPhases({ rounds: initialRounds }: AdminRoundPhasesProp
 
   const enabledCount = rounds.filter((r) => r.predictions_enabled).length;
 
+  const phaseDetail = `${enabledCount} de ${rounds.length} fases abiertas para pronósticos`;
+
   return (
-    <section className="rounded-xl border border-border/50 bg-white px-5 py-4 shadow-sm">
-      <div className="flex flex-col gap-1">
-        <h2 className="font-headline text-lg font-bold text-primary">
-          Fases del torneo
-        </h2>
-        <p className="font-geist text-sm text-on-surface-variant">
-          Activa las fases en las que los usuarios pueden pronosticar partidos.
-        </p>
-        <p className="font-geist text-sm text-on-surface-variant">
-          Recomendado: una fase a la vez (primero Fase de Grupos, luego
-          Dieciseisavos, etc.).
-        </p>
-        <p className="font-geist text-sm text-on-surface-variant">
-          El cierre por partido sigue siendo 60 min antes del inicio.
-        </p>
-        <p className="font-geist text-xs text-on-surface-variant">
-          {enabledCount} de {rounds.length} fases abiertas para pronósticos
-        </p>
-      </div>
+    <CollapsibleSection
+      title="Fases del torneo"
+      subtitle={phaseDetail}
+      titleContent={
+        <CollapsibleInlineHeader
+          title="Fases del torneo"
+          detail={phaseDetail}
+          layout="responsive"
+          className="text-black [&_span]:text-black!"
+        />
+      }
+      defaultOpen={false}
+      className="admin-light-surface bg-white"
+      headerClassName="bg-white transition-[background-color] hover:bg-surface-container-lowest/60"
+    >
+      <div className="flex flex-col gap-4 px-4 py-4">
+        <div className="flex flex-col gap-1">
+          <p className="font-geist text-xs md:text-sm text-on-surface-variant">
+            Activa las fases en las que los usuarios pueden pronosticar partidos.
+          </p>
+          <p className="font-geist text-xs md:text-sm text-on-surface-variant">
+            Recomendado: una fase a la vez (primero Fase de Grupos, luego
+            Dieciseisavos, etc.).
+          </p>
+          <p className="font-geist text-xs md:text-sm text-on-surface-variant">
+            El cierre por partido sigue siendo 60 min antes del inicio.
+          </p>
+        </div>
 
-      {error ? (
-        <Alert variant="destructive" className="mt-4">
-          <p className="font-geist text-sm">{error}</p>
-        </Alert>
-      ) : null}
-      {success ? (
-        <Alert className="mt-4">
-          <p className="font-geist text-sm">{success}</p>
-        </Alert>
-      ) : null}
+        {error ? (
+          <Alert variant="destructive">
+            <p className="font-geist text-sm">{error}</p>
+          </Alert>
+        ) : null}
+        {success ? (
+          <Alert>
+            <p className="font-geist text-sm">{success}</p>
+          </Alert>
+        ) : null}
 
-      <ul className="mt-4 divide-y divide-outline-variant/40">
-        {rounds.map((round) => {
-          const isSaving = savingRoundId === round.id_round;
-          return (
-            <li
-              key={round.id_round}
-              className={cn(
-                "flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0",
-                !round.predictions_enabled && "opacity-80",
-              )}
-            >
-              <div className="min-w-0">
-                <p className="font-geist font-medium text-black">
-                  {round.name_round}
-                </p>
-              </div>
-              <label className="flex shrink-0 cursor-pointer items-center gap-2">
-                <span className="font-geist text-xs text-on-surface-variant">
-                  {round.predictions_enabled ? "Abierta" : "Cerrada"}
-                </span>
-                <input
-                  type="checkbox"
-                  role="switch"
-                  aria-label={`Pronósticos en ${round.name_round}`}
-                  checked={round.predictions_enabled}
-                  disabled={isSaving}
-                  onChange={(e) => handleToggle(round.id_round, e.target.checked)}
-                  className="h-5 w-9 cursor-pointer appearance-none rounded-full border border-outline-variant bg-surface-container-high transition-colors checked:border-primary checked:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
-                />
-                {isSaving ? (
-                  <MaterialIcon
-                    name="progress_activity"
-                    className="animate-spin text-base text-on-surface-variant"
+        <ul className="divide-y divide-outline-variant/40">
+          {rounds.map((round) => {
+            const isSaving = savingRoundId === round.id_round;
+            return (
+              <li
+                key={round.id_round}
+                className={cn(
+                  "flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0",
+                  !round.predictions_enabled && "opacity-80",
+                )}
+              >
+                <div className="min-w-0">
+                  <p className="font-geist font-medium text-black">
+                    {round.name_round}
+                  </p>
+                </div>
+                <label className="flex shrink-0 cursor-pointer items-center gap-2">
+                  <span className="font-geist text-xs text-on-surface-variant">
+                    {round.predictions_enabled ? "Abierta" : "Cerrada"}
+                  </span>
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    aria-label={`Pronósticos en ${round.name_round}`}
+                    checked={round.predictions_enabled}
+                    disabled={isSaving}
+                    onChange={(e) => handleToggle(round.id_round, e.target.checked)}
+                    className="h-5 w-9 cursor-pointer appearance-none rounded-full border border-outline-variant bg-surface-container-high transition-colors checked:border-primary checked:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
                   />
-                ) : null}
-              </label>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
+                  {isSaving ? (
+                    <MaterialIcon
+                      name="progress_activity"
+                      className="animate-spin text-base text-on-surface-variant"
+                    />
+                  ) : null}
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </CollapsibleSection>
   );
 }

@@ -1,11 +1,14 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { ensureUserPool } from "@/lib/predictions-utils";
 import { MaterialIcon } from "@/components/material-icon";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SiteHeader } from "@/components/site-header";
 import { PredictionsClient } from "@/components/predictions/predictions-client";
 import type { FixtureRow, PlayerRow, PredictionRow, TeamRow } from "@/lib/predictions-types";
 import type { MatchResultDetail, SideBetOutcome } from "@/lib/prediction-scoring";
+
+export const dynamic = "force-dynamic";
 
 function sortFixtures(fixtures: FixtureRow[]): FixtureRow[] {
   return [...fixtures].sort((a, b) => {
@@ -94,52 +97,43 @@ export default async function ApuestasPage() {
       .maybeSingle();
     isAdmin = profile?.is_admin ?? false;
 
-    const { data: pools } = await supabase
-      .from("pools")
-      .select("id_pool")
-      .eq("owner_id", user.id)
-      .order("id_pool")
-      .limit(1);
+    poolId = await ensureUserPool(supabase, user.id);
 
-    if (pools && pools.length > 0) {
-      poolId = pools[0].id_pool;
+    const [{ data: predictions }, { data: tournamentPred }, { data: sideBets }] =
+      await Promise.all([
+        supabase
+          .from("predictions")
+          .select(
+            "id_pool, id_match, goals_home, goals_away, extra_time, first_goal_minute",
+          )
+          .eq("id_pool", poolId),
+        supabase
+          .from("tournament_predictions")
+          .select("id_pool, winner_team_id, top_scorer_player_id, top_scorer_goals")
+          .eq("id_pool", poolId)
+          .maybeSingle(),
+        supabase
+          .from("v_prediction_side_bets")
+          .select(
+            "id_match, actual_first_goal_range, predicted_first_goal_range, first_goal_minute_hit, extra_time_hit",
+          )
+          .eq("id_pool", poolId),
+      ]);
 
-      const [{ data: predictions }, { data: tournamentPred }, { data: sideBets }] =
-        await Promise.all([
-          supabase
-            .from("predictions")
-            .select(
-              "id_pool, id_match, goals_home, goals_away, extra_time, first_goal_minute",
-            )
-            .eq("id_pool", poolId),
-          supabase
-            .from("tournament_predictions")
-            .select("id_pool, winner_team_id, top_scorer_player_id, top_scorer_goals")
-            .eq("id_pool", poolId)
-            .maybeSingle(),
-          supabase
-            .from("v_prediction_side_bets")
-            .select(
-              "id_match, actual_first_goal_range, predicted_first_goal_range, first_goal_minute_hit, extra_time_hit",
-            )
-            .eq("id_pool", poolId),
-        ]);
-
-      for (const row of predictions ?? []) {
-        predictionsByMatch[row.id_match] = row;
-      }
-
-      for (const row of sideBets ?? []) {
-        sideBetsByMatch[row.id_match] = {
-          actualFirstGoalRange: row.actual_first_goal_range,
-          predictedFirstGoalRange: row.predicted_first_goal_range,
-          firstGoalMinuteHit: row.first_goal_minute_hit,
-          extraTimeHit: row.extra_time_hit,
-        };
-      }
-
-      tournamentPrediction = tournamentPred;
+    for (const row of predictions ?? []) {
+      predictionsByMatch[row.id_match] = row;
     }
+
+    for (const row of sideBets ?? []) {
+      sideBetsByMatch[row.id_match] = {
+        actualFirstGoalRange: row.actual_first_goal_range,
+        predictedFirstGoalRange: row.predicted_first_goal_range,
+        firstGoalMinuteHit: row.first_goal_minute_hit,
+        extraTimeHit: row.extra_time_hit,
+      };
+    }
+
+    tournamentPrediction = tournamentPred;
   }
 
   return (
@@ -179,6 +173,7 @@ export default async function ApuestasPage() {
           }
         >
           <PredictionsClient
+            key={`${poolId ?? "guest"}-${tournamentPrediction?.winner_team_id ?? ""}-${tournamentPrediction?.top_scorer_player_id ?? ""}-${tournamentPrediction?.top_scorer_goals ?? ""}`}
             fixtures={fixtures}
             scoringRules={scoringRules ?? []}
             predictionsByMatch={predictionsByMatch}

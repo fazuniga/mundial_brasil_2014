@@ -12,9 +12,9 @@ import { Input } from "@/components/ui/input";
 import type { AdminFixtureRow, MatchGoalRow, MatchResultDraft } from "@/lib/admin-types";
 import {
   deriveFirstGoalFromGoals,
-  deriveScoreFromGoals,
   canSaveAdminMatch,
   isAdminMatchDirty,
+  resolveRegulationScore,
 } from "@/lib/admin-utils";
 import {
   formatFixtureDateTime,
@@ -58,26 +58,23 @@ function regulationScoreDisplay(
   goals: MatchGoalRow[],
   players: PlayerRow[],
   draft: MatchResultDraft,
-  isSaved: boolean,
 ): { home: string; away: string } | null {
-  if (goals.length > 0 || isSaved) {
-    const derived = deriveScoreFromGoals(
-      goals,
-      fixture.home_team_id,
-      fixture.away_team_id,
-      players,
-    );
-    return {
-      home: derived.goalsHome.toString(),
-      away: derived.goalsAway.toString(),
-    };
+  if (goals.length === 0 && (draft.goalsHome === "" || draft.goalsAway === "")) {
+    return null;
   }
 
-  if (draft.goalsHome !== "" && draft.goalsAway !== "") {
-    return { home: draft.goalsHome, away: draft.goalsAway };
-  }
+  const score = resolveRegulationScore(
+    goals,
+    fixture.home_team_id,
+    fixture.away_team_id,
+    players,
+    draft,
+  );
 
-  return null;
+  return {
+    home: score.goalsHome.toString(),
+    away: score.goalsAway.toString(),
+  };
 }
 
 function LabeledScoreInput({
@@ -192,7 +189,7 @@ function AdminMatchCard({
     fixture.match_date,
     fixture.match_time,
   );
-  const score = regulationScoreDisplay(fixture, goals, players, draft, isSaved);
+  const score = regulationScoreDisplay(fixture, goals, players, draft);
 
   return (
     <article className="rounded-lg border border-border/50 bg-slate-50/50 p-4 shadow-sm">
@@ -330,11 +327,12 @@ function AdminMatchForm({
 }) {
   const isKnockout = isKnockoutFixture(fixture);
   const derivedFirstGoal = deriveFirstGoalFromGoals(goals, players);
-  const derivedRegulation = deriveScoreFromGoals(
+  const derivedRegulation = resolveRegulationScore(
     goals,
     fixture.home_team_id,
     fixture.away_team_id,
     players,
+    draft,
   );
   const canSave = canSaveAdminMatch(
     draft,
@@ -430,7 +428,7 @@ function AdminMatchForm({
       ) : null}
 
       <div className="flex justify-center">
-        <Button type="button" onClick={onSave} disabled={saving || !canSave} className="w-full max-w-xs bg-white! hover:bg-primary-hover! hover:text-white!">
+        <Button type="button" onClick={onSave} disabled={saving || !canSave} className="w-full max-w-xs bg-primary! text-white! hover:bg-primary-hover! hover:text-white!">
           {saving ? "Guardando…" : "Guardar partido"}
         </Button>
       </div>
@@ -573,7 +571,6 @@ export function AdminMatchSection({
                 matchGoals,
                 players,
                 draft,
-                isSaved,
               );
 
               return (

@@ -6,7 +6,11 @@ import type {
   MatchTeamRow,
 } from "@/lib/admin-types";
 import type { FixtureRow, PlayerRow } from "@/lib/predictions-types";
-import { groupFixturesBySection, type FixtureGroup } from "@/lib/predictions-utils";
+import {
+  groupFixturesByGame,
+  groupFixturesBySection,
+  type FixtureGroup,
+} from "@/lib/predictions-utils";
 
 const GROUP_STAGE_ROUND_ID = 1;
 const GROUP_STAGE_SECTION_TITLE = "Fase de Grupos";
@@ -76,6 +80,11 @@ export function groupAdminFixturesBySection(fixtures: FixtureRow[]): FixtureGrou
     }));
 
   return [...sections, ...knockouts];
+}
+
+/** Admin: single section with all fixtures ordered by kickoff (match_date, match_time). */
+export function groupAdminFixturesByGame(fixtures: FixtureRow[]): FixtureGroup[] {
+  return groupFixturesByGame(fixtures);
 }
 
 export function mergeFixturesWithTeams(
@@ -156,6 +165,33 @@ export function deriveScoreFromGoals(
   }
 
   return { goalsHome, goalsAway };
+}
+
+/** Goals list when present; otherwise saved draft from match_results. */
+export function resolveRegulationScore(
+  goals: MatchGoalRow[],
+  homeTeamId: number,
+  awayTeamId: number,
+  players: PlayerRow[],
+  draft: MatchResultDraft,
+): DerivedRegulationScore {
+  if (goals.length > 0) {
+    return deriveScoreFromGoals(goals, homeTeamId, awayTeamId, players);
+  }
+
+  const goalsHome = Number.parseInt(draft.goalsHome, 10);
+  const goalsAway = Number.parseInt(draft.goalsAway, 10);
+
+  if (
+    draft.goalsHome !== "" &&
+    draft.goalsAway !== "" &&
+    !Number.isNaN(goalsHome) &&
+    !Number.isNaN(goalsAway)
+  ) {
+    return { goalsHome, goalsAway };
+  }
+
+  return { goalsHome: 0, goalsAway: 0 };
 }
 
 export function regulationScoreToDraft(score: DerivedRegulationScore): Pick<

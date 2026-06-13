@@ -90,7 +90,7 @@ export function TeamSearchSelect({
           onClick={() => !disabled && setOpen(true)}
           className={cn(
             "flex h-9 w-full items-center justify-between rounded-md border border-outline-variant bg-surface-container-lowest px-3 text-left font-geist text-sm text-on-surface",
-            disabled && "cursor-not-allowed opacity-50",
+            disabled && "cursor-not-allowed",
           )}
         >
           <span className="flex min-w-0 items-center gap-2">
@@ -107,6 +107,13 @@ export function TeamSearchSelect({
             <span className="ml-2 shrink-0 text-xs text-primary">Cambiar</span>
           )}
         </button>
+      ) : value && !open ? (
+        <div
+          id={id}
+          className="flex h-9 w-full items-center rounded-md border border-outline-variant bg-surface-container-lowest px-3 font-geist text-sm text-on-surface"
+        >
+          <span className="truncate">Pronóstico guardado</span>
+        </div>
       ) : (
         <>
           <Input

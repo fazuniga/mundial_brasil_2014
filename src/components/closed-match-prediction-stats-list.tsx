@@ -2,18 +2,27 @@ import { MaterialIcon } from "@/components/material-icon";
 import { FixtureRowCard } from "@/components/fixture-row-card";
 import {
   formatPredictionStatPercent,
-  type ClosedMatchPredictionStatsRow,
+  type MatchPredictionStatsRow,
 } from "@/lib/closed-match-prediction-stats";
 import type { MatchResultScore } from "@/lib/home-fixtures";
 import type { MatchGoalPublicRow } from "@/lib/match-goals-display";
+import { getFixturePredictionLock } from "@/lib/predictions-utils";
+import { cn } from "@/lib/utils";
 
-type ClosedMatchPredictionStatsListProps = {
-  rows: ClosedMatchPredictionStatsRow[];
+type MatchPredictionStatsListProps = {
+  rows: MatchPredictionStatsRow[];
   resultsByMatch: Record<number, MatchResultScore>;
   goalsByMatch: Record<number, MatchGoalPublicRow[]>;
 };
 
-function PredictionStatsFooter({ row }: { row: ClosedMatchPredictionStatsRow }) {
+function predictionLockLabel(row: MatchPredictionStatsRow): string {
+  const lock = getFixturePredictionLock(row);
+  if (lock === "open") return "Pronósticos abiertos";
+  return "Cerrados 60 min antes del inicio";
+}
+
+function PredictionStatsFooter({ row }: { row: MatchPredictionStatsRow }) {
+  const lock = getFixturePredictionLock(row);
   const total = row.bet_count;
 
   const stats = [
@@ -32,6 +41,16 @@ function PredictionStatsFooter({ row }: { row: ClosedMatchPredictionStatsRow }) 
 
   return (
     <div className="flex flex-col gap-2">
+      <p
+        className={cn(
+          "font-geist text-[11px] font-medium",
+          lock === "open"
+            ? "text-primary"
+            : "uppercase tracking-wide text-on-surface-variant",
+        )}
+      >
+        {predictionLockLabel(row)}
+      </p>
       <p className="font-geist text-[11px] font-medium uppercase tracking-wide text-on-surface-variant">
         Pronósticos agregados
         {total > 0 ? (
@@ -53,36 +72,42 @@ function PredictionStatsFooter({ row }: { row: ClosedMatchPredictionStatsRow }) 
       </dl>
       {total === 0 ? (
         <p className="font-geist text-xs text-on-surface-variant">
-          Sin pronósticos registrados para este partido.
+          {lock === "open"
+            ? "Aún no hay pronósticos registrados para este partido."
+            : "Sin pronósticos registrados para este partido."}
+        </p>
+      ) : lock === "open" ? (
+        <p className="font-geist text-xs text-on-surface-variant">
+          Totales parciales · los pronósticos siguen abiertos.
         </p>
       ) : null}
     </div>
   );
 }
 
-export function ClosedMatchPredictionStatsList({
+export function MatchPredictionStatsList({
   rows,
   resultsByMatch,
   goalsByMatch,
-}: ClosedMatchPredictionStatsListProps) {
+}: MatchPredictionStatsListProps) {
   return (
     <section className="light-surface-panel overflow-hidden rounded-xl border border-outline-variant/60 bg-white shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-outline-variant/50 bg-white p-4">
         <div className="flex min-w-0 items-center gap-3">
-          <MaterialIcon name="lock" className="text-2xl text-accent" />
+          <MaterialIcon name="bar_chart" className="text-2xl text-accent" />
           <div className="flex flex-col gap-0">
             <h2 className="font-geist text-lg font-semibold text-on-surface">
-              Partidos con pronósticos cerrados
+              ¿Qué apostó la gente?
             </h2>
             <p className="font-geist text-sm text-on-surface-variant">
-              Rondas con pronósticos activos · cerrados 60 min antes del inicio
+              Partidos con pronósticos
             </p>
           </div>
         </div>
       </div>
 
       {rows.length > 0 ? (
-        <ul>
+        <ul className="flex flex-col gap-stack-gap p-3 sm:p-4">
           {rows.map((row) => {
             const result = resultsByMatch[row.id_match];
             const score =
@@ -99,6 +124,7 @@ export function ClosedMatchPredictionStatsList({
                 goals={goals.length > 0 ? goals : undefined}
                 showPredictLink={false}
                 showVenue
+                layout="card"
                 footer={<PredictionStatsFooter row={row} />}
               />
             );
@@ -106,9 +132,12 @@ export function ClosedMatchPredictionStatsList({
         </ul>
       ) : (
         <p className="font-geist px-5 py-8 text-sm text-muted-foreground">
-          Aún no hay partidos con pronósticos cerrados.
+          No hay partidos en rondas con pronósticos activos.
         </p>
       )}
     </section>
   );
 }
+
+/** @deprecated Use MatchPredictionStatsList */
+export const ClosedMatchPredictionStatsList = MatchPredictionStatsList;

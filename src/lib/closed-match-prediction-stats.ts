@@ -1,7 +1,7 @@
 import type { FixtureRow } from "@/lib/predictions-types";
 
-/** Row from v_closed_match_prediction_stats. */
-export type ClosedMatchPredictionStatsRow = FixtureRow & {
+/** Row from v_match_prediction_stats (or v_closed_match_prediction_stats). */
+export type MatchPredictionStatsRow = FixtureRow & {
   bet_count: number;
   home_win_count: number;
   away_win_count: number;
@@ -9,6 +9,9 @@ export type ClosedMatchPredictionStatsRow = FixtureRow & {
   with_goals_count: number;
   no_goals_count: number;
 };
+
+/** @deprecated Use MatchPredictionStatsRow */
+export type ClosedMatchPredictionStatsRow = MatchPredictionStatsRow;
 
 export function predictionStatPercent(count: number, total: number): number | null {
   if (total <= 0) return null;

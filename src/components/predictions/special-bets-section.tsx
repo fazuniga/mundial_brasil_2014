@@ -97,17 +97,31 @@ export function SpecialBetsSection({
         className={cn(
           "border-t border-outline-variant/40 px-4 py-2",
           disabled
-            ? "bg-surface-container-low/50"
+            ? winnerSaved || topScorerSaved
+              ? "bg-primary/10"
+              : "bg-surface-container-low/50"
             : winnerSaved && topScorerSaved
               ? "bg-primary/10"
               : "bg-surface-container-low/30",
         )}
       >
         {disabled ? (
-          <p className="flex items-center gap-1 font-geist text-xs text-on-surface-variant">
-            <MaterialIcon name="lock" className="text-sm" />
-            Cerrado (60 min antes del primer partido)
-          </p>
+          <div className="flex flex-col gap-1">
+            <p className="flex items-center gap-1 font-geist text-xs text-on-surface-variant">
+              <MaterialIcon name="lock" className="text-sm" />
+              Cerrado (60 min antes del primer partido)
+            </p>
+            {winnerSaved || topScorerSaved ? (
+              <p className="flex items-center gap-1 font-geist text-xs text-primary">
+                <MaterialIcon name="check_circle" className="text-sm" />
+                {winnerSaved && topScorerSaved
+                  ? "Apuestas especiales guardadas"
+                  : winnerSaved
+                    ? "Campeón guardado"
+                    : "Goleador guardado"}
+              </p>
+            ) : null}
+          </div>
         ) : winnerSaved && topScorerSaved ? (
           <p className="flex items-center gap-1 font-geist text-xs text-primary">
             <MaterialIcon name="check_circle" className="text-sm" />

@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { PredictionsSearchBar } from "@/components/predictions/predictions-search-bar";
 import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { AdminMatchSection } from "@/components/admin/admin-match-section";
+import { AdminSpecialBetsToggle } from "@/components/admin/admin-special-bets-toggle";
 import { AdminTournamentFinals } from "@/components/admin/admin-tournament-finals";
 import type {
   AdminClientProps,
@@ -17,7 +19,8 @@ import type {
 import {
   deriveFirstGoalFromGoals,
   deriveScoreFromGoals,
-  groupAdminFixturesBySection,
+  groupAdminFixturesByGame,
+  groupFixturesBySection,
   canSaveAdminMatch,
   isMatchResultSaved,
   matchResultDraftFromRow,
@@ -25,6 +28,8 @@ import {
   regulationScoreToDraft,
 } from "@/lib/admin-utils";
 import { filterSectionsBySearch } from "@/lib/predictions-utils";
+
+type AdminFixtureViewMode = "group" | "game";
 
 function buildInitialDrafts(
   resultsByMatch: Record<number, MatchResultRow>,
@@ -57,10 +62,17 @@ export function AdminClient({
   players,
   topScorerSummary,
   winnerSummary,
+  specialBetsSettings,
 }: AdminClientProps) {
   const router = useRouter();
   const matchIds = useMemo(() => fixtures.map((f) => f.id_match), [fixtures]);
-  const sections = useMemo(() => groupAdminFixturesBySection(fixtures), [fixtures]);
+  const [viewMode, setViewMode] = useState<AdminFixtureViewMode>("group");
+  const sections = useMemo(() => {
+    if (viewMode === "game") {
+      return groupAdminFixturesByGame(fixtures);
+    }
+    return groupFixturesBySection(fixtures);
+  }, [fixtures, viewMode]);
   const [searchQuery, setSearchQuery] = useState("");
   const filteredSections = useMemo(
     () => filterSectionsBySearch(sections, searchQuery),
@@ -272,16 +284,51 @@ export function AdminClient({
         </Alert>
       ) : null}
 
+      <AdminSpecialBetsToggle settings={specialBetsSettings} />
+
       <AdminTournamentFinals
         winnerSummary={winnerSummary}
         topScorerSummary={topScorerSummary}
       />
 
-      <PredictionsSearchBar
-        value={searchQuery}
-        onChange={setSearchQuery}
-        resultCount={searchQuery.trim() ? filteredMatchCount : undefined}
-      />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-1.5">
+          <p className="font-geist text-sm font-medium text-on-surface">Organizar</p>
+          <div
+            className="inline-flex w-fit rounded-lg border border-border/60 bg-slate-50 p-1"
+            role="group"
+            aria-label="Organizar partidos"
+          >
+            <Button
+              type="button"
+              size="sm"
+              variant={viewMode === "group" ? "default" : "ghost"}
+              className={viewMode === "group" ? "text-white" : "text-on-surface"}
+              aria-pressed={viewMode === "group"}
+              onClick={() => setViewMode("group")}
+            >
+              Por grupo
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={viewMode === "game" ? "default" : "ghost"}
+              className={viewMode === "game" ? "text-white" : "text-on-surface"}
+              aria-pressed={viewMode === "game"}
+              onClick={() => setViewMode("game")}
+            >
+              Por partido
+            </Button>
+          </div>
+        </div>
+
+        <PredictionsSearchBar
+          value={searchQuery}
+          onChange={setSearchQuery}
+          resultCount={searchQuery.trim() ? filteredMatchCount : undefined}
+          className="min-w-0 flex-1 sm:max-w-md"
+        />
+      </div>
 
       {searchQuery.trim() && filteredSections.length === 0 ? (
         <p className="font-geist text-base text-on-surface-variant">

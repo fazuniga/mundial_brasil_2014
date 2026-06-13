@@ -218,31 +218,83 @@ for (let n = 73; n <= 104; n++) {
   if (n <= 102) PLACEHOLDER_LABELS.add(`Perdedor ${n}`);
 }
 
-/** Wall-clock kickoff shift applied to all generated match times (hours). */
-const KICKOFF_OFFSET_HOURS = 2;
+/** IANA timezone per host city (FIFA venue-local kickoffs). */
+const VENUE_TIMEZONES = {
+  "Mexico City": "America/Mexico_City",
+  Guadalajara: "America/Mexico_City",
+  Monterrey: "America/Monterrey",
+  Toronto: "America/Toronto",
+  Vancouver: "America/Vancouver",
+  "Los Angeles": "America/Los_Angeles",
+  "San Francisco Bay Area": "America/Los_Angeles",
+  Seattle: "America/Los_Angeles",
+  Boston: "America/New_York",
+  "New York/New Jersey": "America/New_York",
+  Philadelphia: "America/New_York",
+  Houston: "America/Chicago",
+  Dallas: "America/Chicago",
+  "Kansas City": "America/Chicago",
+  Miami: "America/New_York",
+  Atlanta: "America/New_York",
+};
 
-function pad2(n) {
-  return String(n).padStart(2, "0");
-}
+/** Matches MATCH_STORAGE_TIMEZONE in src/lib/match-timezone.ts */
+const STORAGE_TIMEZONE = "America/New_York";
 
-/** Add hours to date + HH:MM; rolls match_date when time crosses midnight. */
-function shiftKickoff(dateStr, timeStr, hours = KICKOFF_OFFSET_HOURS) {
+/** Resolve a wall-clock instant in one IANA zone to date + HH:MM in another. */
+function wallTimeInZone(dateStr, timeStr, fromTz, toTz) {
   const [y, m, d] = dateStr.split("-").map(Number);
   const [hh, mm] = timeStr.split(":").map(Number);
-  let totalMin = hh * 60 + mm + hours * 60;
-  let day = d;
-  while (totalMin >= 24 * 60) {
-    totalMin -= 24 * 60;
-    day += 1;
+  let utcMs = Date.UTC(y, m - 1, d, hh, mm);
+
+  const inFmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: fromTz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+
+  for (let i = 0; i < 4; i++) {
+    const parts = inFmt.formatToParts(new Date(utcMs));
+    const get = (type) => Number(parts.find((p) => p.type === type)?.value ?? 0);
+    const targetMs = Date.UTC(y, m - 1, d, hh, mm);
+    const actualMs = Date.UTC(
+      get("year"),
+      get("month") - 1,
+      get("day"),
+      get("hour"),
+      get("minute"),
+    );
+    const deltaMs = targetMs - actualMs;
+    if (deltaMs === 0) break;
+    utcMs += deltaMs;
   }
-  while (totalMin < 0) {
-    totalMin += 24 * 60;
-    day -= 1;
-  }
-  const dt = new Date(y, m - 1, day);
-  const date = `${dt.getFullYear()}-${pad2(dt.getMonth() + 1)}-${pad2(dt.getDate())}`;
-  const time = `${pad2(Math.floor(totalMin / 60))}:${pad2(totalMin % 60)}`;
-  return { date, time };
+
+  const outFmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: toTz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+  const parts = outFmt.formatToParts(new Date(utcMs));
+  const get = (type) => parts.find((p) => p.type === type)?.value ?? "00";
+
+  return {
+    date: `${get("year")}-${get("month")}-${get("day")}`,
+    time: `${get("hour")}:${get("minute")}`,
+  };
+}
+
+/** Convert venue-local FIFA kickoff to stored match_date + match_time. */
+function venueLocalToStorage(dateStr, timeStr, venueIndex) {
+  const [city] = VENUES[venueIndex - 1];
+  return wallTimeInZone(dateStr, timeStr, VENUE_TIMEZONES[city], STORAGE_TIMEZONE);
 }
 
 function esc(s) {
@@ -320,7 +372,7 @@ for (const label of PLACEHOLDER_LABELS) {
 
 for (const line of GROUP_MATCHES.trim().split("\n")) {
   const [id, date, time, home, away, group, vi] = line.split("|");
-  const kickoff = shiftKickoff(date, time);
+  const kickoff = venueLocalToStorage(date, time, +vi);
   const [city, st] = VENUES[+vi - 1];
   out.push(
     `INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)
@@ -332,7 +384,7 @@ WHERE g.group_code='${group}' AND v.city='${esc(city)}' AND v.stadium='${esc(st)
 }
 
 for (const [id, round, date, time, home, away, vi] of KO) {
-  const kickoff = shiftKickoff(date, time);
+  const kickoff = venueLocalToStorage(date, time, vi);
   const [city, st] = VENUES[vi - 1];
   out.push(
     `INSERT INTO public.matches (id_match,id_round,id_group,match_date,match_time,id_venue,home_team_id,away_team_id,home_slot_id,away_slot_id)

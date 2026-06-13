@@ -66,7 +66,7 @@ export function TopScorerBet({
         />
       </div>
 
-      {isSaved && !disabled ? (
+      {isSaved ? (
         <p className="font-geist text-xs text-primary sm:col-span-2">
           Goleador guardado
         </p>

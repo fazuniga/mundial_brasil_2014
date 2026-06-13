@@ -1,7 +1,10 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { CollapsibleSection } from "@/components/collapsible-section";
+import {
+  CollapsibleInlineHeader,
+  CollapsibleSection,
+} from "@/components/collapsible-section";
 import { MaterialIcon } from "@/components/material-icon";
 import { MatchPredictionCard } from "@/components/predictions/match-prediction-card";
 import {
@@ -84,13 +87,10 @@ export function GroupPredictionsTable({
     <CollapsibleSection
       title={sectionLabel}
       titleContent={
-        <h2 className="font-geist text-sm text-on-surface flex items-center gap-1">
-          <span className="font-semibold">{name}</span>
-          <span className="font-normal">·</span>
-          <span className="text-xs font-normal text-on-surface-variant">
-            {saved} / {totalLabel} con apuesta
-          </span>
-        </h2>
+        <CollapsibleInlineHeader
+          title={name}
+          detail={`${saved} / ${totalLabel} con apuesta`}
+        />
       }
       defaultOpen={defaultOpen}
       className={roundClosed ? "opacity-75" : undefined}

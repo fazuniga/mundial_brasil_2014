@@ -38,7 +38,7 @@ export function WorldCupWinnerBet({
         onChange={(v) => onDraftChange("teamId", v)}
         disabled={disabled}
       />
-      {isSaved && !disabled ? (
+      {isSaved ? (
         <p className="font-geist text-xs text-primary">Campeón guardado</p>
       ) : null}
     </div>
