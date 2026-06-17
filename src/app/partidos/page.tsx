@@ -12,7 +12,8 @@ import {
 } from "@/lib/group-standings";
 import { buildResultsByMatch, type MatchResultScore } from "@/lib/home-fixtures";
 import { buildGoalsByMatch } from "@/lib/match-goals-display";
-import type { FixtureRow } from "@/lib/predictions-types";
+import type { FixtureRow, PredictionRow } from "@/lib/predictions-types";
+import { ensureUserPool } from "@/lib/predictions-utils";
 
 export const metadata: Metadata = {
   title: "Partidos · Polla Mundial 2026",
@@ -82,6 +83,19 @@ export default async function PartidosPage({ searchParams }: PartidosPageProps) 
   const goalsByMatch = buildGoalsByMatch(goalsRaw ?? []);
   const fixtures = (fixturesRaw ?? []) as FixtureRow[];
 
+  const predictionsByMatch: Record<number, PredictionRow> = {};
+  if (user && view === "partido") {
+    const poolId = await ensureUserPool(supabase, user.id);
+    const { data: predictions } = await supabase
+      .from("predictions")
+      .select("id_pool, id_match, goals_home, goals_away, extra_time, first_goal_minute")
+      .eq("id_pool", poolId);
+
+    for (const row of predictions ?? []) {
+      predictionsByMatch[row.id_match] = row as PredictionRow;
+    }
+  }
+
   const error = view === "grupo" ? standingsError : fixturesError;
 
   return (
@@ -122,6 +136,9 @@ export default async function PartidosPage({ searchParams }: PartidosPageProps) 
               fixtures={fixtures}
               resultsByMatch={resultsByMatch}
               goalsByMatch={goalsByMatch}
+              predictionsByMatch={
+                Object.keys(predictionsByMatch).length > 0 ? predictionsByMatch : undefined
+              }
             />
           ) : null}
         </div>
