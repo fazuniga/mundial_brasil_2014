@@ -2,7 +2,8 @@ import { MaterialIcon } from "@/components/material-icon";
 import { FixtureRowCard } from "@/components/fixture-row-card";
 import { isMatchCompleted, type MatchResultScore } from "@/lib/home-fixtures";
 import type { MatchGoalPublicRow } from "@/lib/match-goals-display";
-import { formatScore } from "@/lib/prediction-scoring";
+import { formatScore, firstGoalRangeLabel } from "@/lib/prediction-scoring";
+import { scoringRuleLabel } from "@/lib/scoring-labels";
 import type { FixtureRow, PredictionRow } from "@/lib/predictions-types";
 
 type MatchResultsListProps = {
@@ -12,14 +13,34 @@ type MatchResultsListProps = {
   predictionsByMatch?: Record<number, PredictionRow>;
 };
 
-function MyBetFooter({ goalsHome, goalsAway }: { goalsHome: number; goalsAway: number }) {
+function MyBetFooter({
+  goalsHome,
+  goalsAway,
+  firstGoalMinute,
+}: {
+  goalsHome: number;
+  goalsAway: number;
+  firstGoalMinute?: string | null;
+}) {
+  const rangeLabel = firstGoalMinute ? firstGoalRangeLabel(firstGoalMinute) : null;
+
   return (
-    <p className="font-geist text-sm text-on-surface">
-      <span className="font-medium text-on-surface-variant">Mi apuesta:</span>{" "}
-      <span className="font-headline font-semibold tabular-nums text-primary">
-        {formatScore(goalsHome, goalsAway)}
-      </span>
-    </p>
+    <div className="flex flex-col gap-0.5 font-geist text-xs md:text-sm text-on-surface">
+      <p>
+        <span className="font-medium text-on-surface-variant">Mi apuesta:</span>{" "}
+        <span className="font-headline font-semibold tabular-nums text-primary">
+          {formatScore(goalsHome, goalsAway)}
+        </span>
+      </p>
+      {rangeLabel ? (
+        <p>
+          <span className="font-medium text-on-surface-variant">
+            {scoringRuleLabel("first_goal_minute")}:
+          </span>{" "}
+          <span className="font-medium text-primary">{rangeLabel}</span>
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -81,6 +102,7 @@ export function MatchResultsList({
                     <MyBetFooter
                       goalsHome={prediction.goals_home}
                       goalsAway={prediction.goals_away}
+                      firstGoalMinute={prediction.first_goal_minute}
                     />
                   ) : undefined
                 }

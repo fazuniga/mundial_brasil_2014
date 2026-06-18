@@ -48,6 +48,83 @@ function TeamBadge({
   );
 }
 
+function FixtureMeta({
+  dateShort,
+  timeShort,
+  meta,
+  city,
+  stadium,
+  showVenue,
+  className,
+}: {
+  dateShort: string;
+  timeShort: string;
+  meta: string;
+  city: string;
+  stadium: string;
+  showVenue: boolean;
+  className?: string;
+}) {
+  const showVenueLines = showVenue && Boolean(city || stadium);
+
+  return (
+    <div className={cn("min-w-0", className)}>
+      {showVenueLines ? (
+        <div className="flex items-start justify-between gap-3 sm:hidden">
+          <div className="flex min-w-0 flex-col gap-1">
+            <p className="font-geist text-xs font-medium capitalize text-on-surface">
+              {dateShort} · {timeShort} {MATCH_TIMEZONE_ABBR}
+            </p>
+            {meta ? (
+              <p className="font-geist truncate text-[11px] text-on-surface-variant">{meta}</p>
+            ) : null}
+          </div>
+          <div className="flex max-w-[50%] shrink-0 flex-col gap-0.5 text-right">
+            {city ? (
+              <p className="font-geist text-[11px] leading-snug text-on-surface-variant">{city}</p>
+            ) : null}
+            {stadium ? (
+              <p className="font-geist text-[11px] leading-snug text-on-surface-variant">
+                {stadium}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1 sm:hidden">
+          <p className="font-geist text-xs font-medium capitalize text-on-surface">
+            {dateShort} · {timeShort} {MATCH_TIMEZONE_ABBR}
+          </p>
+          {meta ? (
+            <p className="font-geist truncate text-[11px] text-on-surface-variant">{meta}</p>
+          ) : null}
+        </div>
+      )}
+
+      <div className="hidden flex-col gap-1 sm:flex">
+        <p className="font-geist text-xs font-medium capitalize text-on-surface">
+          {dateShort} · {timeShort} {MATCH_TIMEZONE_ABBR}
+        </p>
+        {meta ? (
+          <p className="font-geist truncate text-[11px] text-on-surface-variant">{meta}</p>
+        ) : null}
+        {showVenueLines ? (
+          <div className="flex flex-col gap-0.5">
+            {city ? (
+              <p className="font-geist text-[11px] leading-snug text-on-surface-variant">{city}</p>
+            ) : null}
+            {stadium ? (
+              <p className="font-geist text-[11px] leading-snug text-on-surface-variant">
+                {stadium}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 type FixtureRowCardProps = {
   fixture: FixtureRow;
   score?: { home: number; away: number };
@@ -75,10 +152,8 @@ export function FixtureRowCard({
   const meta = [fixture.name_round, fixture.group_code && `Grupo ${fixture.group_code}`]
     .filter(Boolean)
     .join(" · ");
-  const venueText =
-    showVenue && (fixture.city || fixture.stadium)
-      ? [fixture.city, fixture.stadium].filter(Boolean).join(" · ")
-      : null;
+  const showVenueBlock =
+    showVenue && Boolean(fixture.city || fixture.stadium);
 
   return (
     <li
@@ -89,38 +164,16 @@ export function FixtureRowCard({
       )}
     >
       <div className="flex flex-col px-4 py-3">
-        {venueText ? (
-          <div className="flex items-start justify-between gap-3 sm:hidden">
-            <p className="font-geist min-w-0 text-xs font-medium capitalize text-on-surface">
-              {dateShort} · {timeShort} {MATCH_TIMEZONE_ABBR}
-            </p>
-            <p className="font-geist max-w-[50%] shrink-0 truncate text-right text-[11px] text-on-surface-variant">
-              {venueText}
-            </p>
-          </div>
-        ) : null}
-
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-          <div className="min-w-0 shrink-0 sm:w-52">
-            <p
-              className={cn(
-                "font-geist text-xs font-medium capitalize text-on-surface",
-                venueText && "hidden sm:block",
-              )}
-            >
-              {dateShort} · {timeShort} {MATCH_TIMEZONE_ABBR}
-            </p>
-            {meta ? (
-              <p className="font-geist mt-1 truncate text-[11px] text-on-surface-variant">
-                {meta}
-              </p>
-            ) : null}
-            {venueText ? (
-              <p className="font-geist mt-1 hidden truncate text-[11px] text-on-surface-variant sm:block">
-                {venueText}
-              </p>
-            ) : null}
-          </div>
+          <FixtureMeta
+            dateShort={dateShort}
+            timeShort={timeShort}
+            meta={meta}
+            city={fixture.city}
+            stadium={fixture.stadium}
+            showVenue={showVenueBlock}
+            className="shrink-0 sm:w-52"
+          />
 
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
             <div className="flex items-center gap-2">
@@ -171,7 +224,7 @@ export function FixtureRowCard({
       </div>
 
       {footer ? (
-        <div className="border-t border-outline-variant/30 bg-surface-container-lowest px-4 py-3">
+        <div className="border-t border-outline-variant/30 bg-gray-50 px-4 py-3">
           {footer}
         </div>
       ) : null}

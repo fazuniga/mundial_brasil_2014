@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { formatPredictionLockWindowShort } from "@/lib/prediction-lock";
 
 /** Copy from README.md § What changed from 2014 */
 export function Format2026Note() {
@@ -59,7 +60,7 @@ export function Format2026Note() {
         </div>
         <p className="mt-4 text-sm text-muted-foreground">
           Lógica central preservada: resultados y puntos por acierto, cierre de
-          apuestas 60 min antes del kickoff y reglas de puntuación del torneo.
+          apuestas {formatPredictionLockWindowShort()} antes del kickoff y reglas de puntuación del torneo.
         </p>
       </CardContent>
     </Card>

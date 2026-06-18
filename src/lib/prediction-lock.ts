@@ -1,7 +1,19 @@
 import { parseMatchKickoff } from "@/lib/match-timezone";
 
-/** Matches v_fixture.predictions_open: lock when kickoff is less than 60 min away. */
-export const PREDICTION_LOCK_MINUTES_BEFORE_KICKOFF = 60;
+/** Matches v_fixture.predictions_open: lock when kickoff is less than this many minutes away. */
+export const PREDICTION_LOCK_MINUTES_BEFORE_KICKOFF = 30;
+
+/** User-facing label, e.g. "30 minutos". */
+export function formatPredictionLockWindowLabel(
+  minutes: number = PREDICTION_LOCK_MINUTES_BEFORE_KICKOFF,
+): string {
+  return `${minutes} minuto${minutes === 1 ? "" : "s"}`;
+}
+
+/** Compact label, e.g. "30 min". */
+export function formatPredictionLockWindowShort(): string {
+  return `${PREDICTION_LOCK_MINUTES_BEFORE_KICKOFF} min`;
+}
 
 export type PredictionLockState = {
   isOpen: boolean;

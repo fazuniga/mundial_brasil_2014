@@ -9,10 +9,11 @@ import type { MatchPredictionStatsRow } from "@/lib/closed-match-prediction-stat
 import { fetchSpecialBetsPredictionStats } from "@/lib/fetch-special-bets-stats";
 import { buildResultsByMatch, type MatchResultScore } from "@/lib/home-fixtures";
 import { buildGoalsByMatch } from "@/lib/match-goals-display";
+import { formatPredictionLockWindowShort } from "@/lib/prediction-lock";
 
 export const metadata: Metadata = {
   title: "Estadísticas · Polla Mundial 2026",
-  description: "Rondas con pronósticos activos · cerrados 60 min antes del inicio",
+  description: `Rondas con pronósticos activos · cerrados ${formatPredictionLockWindowShort()} antes del inicio`,
 };
 
 function sortMatchStats(rows: MatchPredictionStatsRow[]): MatchPredictionStatsRow[] {

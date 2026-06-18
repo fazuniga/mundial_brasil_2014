@@ -7,6 +7,7 @@ import {
 import type { MatchResultScore } from "@/lib/home-fixtures";
 import type { MatchGoalPublicRow } from "@/lib/match-goals-display";
 import { getFixturePredictionLock } from "@/lib/predictions-utils";
+import { formatPredictionLockWindowShort } from "@/lib/prediction-lock";
 import { cn } from "@/lib/utils";
 
 type MatchPredictionStatsListProps = {
@@ -18,7 +19,7 @@ type MatchPredictionStatsListProps = {
 function predictionLockLabel(row: MatchPredictionStatsRow): string {
   const lock = getFixturePredictionLock(row);
   if (lock === "open") return "Pronósticos abiertos";
-  return "Cerrados 60 min antes del inicio";
+  return `Cerrados ${formatPredictionLockWindowShort()} antes del inicio`;
 }
 
 function PredictionStatsFooter({ row }: { row: MatchPredictionStatsRow }) {

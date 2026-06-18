@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/site-header";
 import { PredictionsClient } from "@/components/predictions/predictions-client";
 import type { FixtureRow, PlayerRow, PredictionRow, TeamRow } from "@/lib/predictions-types";
 import type { MatchResultDetail, SideBetOutcome } from "@/lib/prediction-scoring";
+import { formatPredictionLockWindowLabel } from "@/lib/prediction-lock";
 
 export const dynamic = "force-dynamic";
 
@@ -160,8 +161,9 @@ export default async function ApuestasPage() {
             <div className="flex items-center max-w-2xl gap-3 rounded-md bg-gray-50 p-3">
               <MaterialIcon name="lightbulb" className="mt-0.5 shrink-0 text-xl text-accent" />
               <p className="font-geist text-sm text-black">
-                Sólo las fases habilitadas aceptan pronósticos, y tienes hasta <b>60 minutos</b>{" "}
-                antes del inicio de cada partido para hacerlo.
+                Sólo las fases habilitadas aceptan pronósticos, y tienes hasta{" "}
+                <b>{formatPredictionLockWindowLabel()}</b> antes del inicio de cada partido para
+                hacerlo.
               </p>
             </div>
           </div>

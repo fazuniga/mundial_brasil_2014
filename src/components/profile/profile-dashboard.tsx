@@ -2,6 +2,7 @@ import Link from "next/link";
 import { MaterialIcon } from "@/components/material-icon";
 import { scoringRuleLabel } from "@/lib/scoring-labels";
 import type { PoolRankingRow } from "@/lib/pool-rankings-types";
+import { formatPredictionLockWindowLabel } from "@/lib/prediction-lock";
 import { cn } from "@/lib/utils";
 
 type ProfileData = {
@@ -158,7 +159,7 @@ export function ProfileDashboard({
             <StatCard
               label="Partidos abiertos"
               value={String(openFixtureCount)}
-              detail="Abiertos hasta 60 minutos antes del partido"
+              detail={`Abiertos hasta ${formatPredictionLockWindowLabel()} antes del partido`}
             />
             <StatCard
               label="Pendientes"

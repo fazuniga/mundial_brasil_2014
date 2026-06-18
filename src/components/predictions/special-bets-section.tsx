@@ -7,6 +7,7 @@ import { TopScorerBet } from "@/components/predictions/top-scorer-bet";
 import { WorldCupWinnerBet } from "@/components/predictions/world-cup-winner-bet";
 import type { PlayerRow, ScoringRuleRow, TeamRow } from "@/lib/predictions-types";
 import type { TopScorerDraft, WinnerDraft } from "@/lib/predictions-utils";
+import { formatPredictionLockWindowShort } from "@/lib/prediction-lock";
 
 type SpecialBetsSectionProps = {
   teams: TeamRow[];
@@ -58,7 +59,7 @@ export function SpecialBetsSection({
               Apuestas Especiales
             </h2>
             <p className="font-geist text-xs text-on-surface-variant">
-              Pronósticos del torneo completo. Se cierran 60 min antes del primer partido.
+              Pronósticos del torneo completo. Se cierran {formatPredictionLockWindowShort()} antes del primer partido.
             </p>
           </div>
         </div>
@@ -109,7 +110,7 @@ export function SpecialBetsSection({
           <div className="flex flex-col gap-1">
             <p className="flex items-center gap-1 font-geist text-xs text-on-surface-variant">
               <MaterialIcon name="lock" className="text-sm" />
-              Cerrado (60 min antes del primer partido)
+              Cerrado ({formatPredictionLockWindowShort()} antes del primer partido)
             </p>
             {winnerSaved || topScorerSaved ? (
               <p className="flex items-center gap-1 font-geist text-xs text-primary">

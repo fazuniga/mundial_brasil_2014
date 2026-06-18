@@ -10,6 +10,7 @@ import {
 import { MaterialIcon } from "@/components/material-icon";
 import { Alert } from "@/components/ui/alert";
 import type { RoundPhaseRow } from "@/lib/predictions-types";
+import { formatPredictionLockWindowShort } from "@/lib/prediction-lock";
 import { cn } from "@/lib/utils";
 
 type AdminRoundPhasesProps = {
@@ -87,7 +88,7 @@ export function AdminRoundPhases({ rounds: initialRounds }: AdminRoundPhasesProp
             Dieciseisavos, etc.).
           </p>
           <p className="font-geist text-xs md:text-sm text-on-surface-variant">
-            El cierre por partido sigue siendo 60 min antes del inicio.
+            El cierre por partido sigue siendo {formatPredictionLockWindowShort()} antes del inicio.
           </p>
         </div>
 

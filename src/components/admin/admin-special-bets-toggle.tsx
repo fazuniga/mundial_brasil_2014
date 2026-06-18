@@ -7,6 +7,7 @@ import { MaterialIcon } from "@/components/material-icon";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import type { SpecialBetsSettings } from "@/lib/admin-types";
+import { formatPredictionLockWindowShort } from "@/lib/prediction-lock";
 import { cn } from "@/lib/utils";
 
 type AdminSpecialBetsToggleProps = {
@@ -92,8 +93,8 @@ export function AdminSpecialBetsToggle({
               Apuestas Especiales
             </h2>
             <p className="font-geist text-xs text-on-surface-variant">
-              Campeón del Mundial y goleador del torneo. Por defecto se cierran 60 min antes del
-              primer partido.
+              Campeón del Mundial y goleador del torneo. Por defecto se cierran{" "}
+              {formatPredictionLockWindowShort()} antes del primer partido.
             </p>
           </div>
         </div>
@@ -123,7 +124,7 @@ export function AdminSpecialBetsToggle({
             </p>
             <p className="font-geist text-xs text-on-surface-variant">
               {isAutomatic
-                ? `Regla automática: ${settings.tournament_bet_auto_open ? "abiertas" : "cerradas (60 min antes del primer partido)"}.`
+                ? `Regla automática: ${settings.tournament_bet_auto_open ? "abiertas" : `cerradas (${formatPredictionLockWindowShort()} antes del primer partido)`}.`
                 : effectiveOpen
                   ? "Forzado abierto por administrador."
                   : "Forzado cerrado por administrador."}

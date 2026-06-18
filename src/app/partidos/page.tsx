@@ -101,7 +101,7 @@ export default async function PartidosPage({ searchParams }: PartidosPageProps) 
   return (
     <>
       <SiteHeader userEmail={user?.email} isAdmin={isAdmin} activeNav="partidos" />
-      <main className="mx-auto flex w-full max-w-7xl flex-col gap-section-gap px-gutter-md py-24 md:pb-8">
+      <main className="mx-auto flex w-full max-w-5xl flex-col gap-section-gap px-gutter-md py-24 md:pb-8">
         <header className="space-y-2">
           <p className="font-geist text-xs font-semibold uppercase tracking-widest text-accent">
             Fase de Grupos
