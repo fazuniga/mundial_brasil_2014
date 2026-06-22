@@ -8,6 +8,6 @@ export default async function ResultadosRedirectPage({
   searchParams,
 }: ResultadosRedirectProps) {
   const { v } = await searchParams;
-  const query = v === "partido" ? "?v=partido" : "";
+  const query = v === "grupo" ? "?v=grupo" : "";
   redirect(`/partidos${query}`);
 }

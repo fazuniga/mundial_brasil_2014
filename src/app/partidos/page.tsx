@@ -25,7 +25,7 @@ type PartidosPageProps = {
 
 export default async function PartidosPage({ searchParams }: PartidosPageProps) {
   const { v } = await searchParams;
-  const view = v === "partido" ? "partido" : "grupo";
+  const view = v === "grupo" ? "grupo" : "partido";
 
   const supabase = await createClient();
   const {
