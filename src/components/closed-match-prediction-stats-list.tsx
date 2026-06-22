@@ -1,4 +1,8 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import { MaterialIcon } from "@/components/material-icon";
+import { TodayMatchesToggle } from "@/components/today-matches-toggle";
 import { FixtureRowCard } from "@/components/fixture-row-card";
 import {
   formatPredictionStatPercent,
@@ -6,6 +10,7 @@ import {
 } from "@/lib/closed-match-prediction-stats";
 import type { MatchResultScore } from "@/lib/home-fixtures";
 import type { MatchGoalPublicRow } from "@/lib/match-goals-display";
+import { filterFixturesToday } from "@/lib/match-timezone";
 import { getFixturePredictionLock } from "@/lib/predictions-utils";
 import { formatPredictionLockWindowShort } from "@/lib/prediction-lock";
 import { cn } from "@/lib/utils";
@@ -91,6 +96,12 @@ export function MatchPredictionStatsList({
   resultsByMatch,
   goalsByMatch,
 }: MatchPredictionStatsListProps) {
+  const [todayOnly, setTodayOnly] = useState(true);
+  const visibleRows = useMemo(
+    () => filterFixturesToday(rows, todayOnly),
+    [rows, todayOnly],
+  );
+
   return (
     <section className="light-surface-panel overflow-hidden rounded-xl border border-outline-variant/60 bg-white shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-outline-variant/50 bg-white p-4">
@@ -101,15 +112,18 @@ export function MatchPredictionStatsList({
               ¿Qué apostó la gente?
             </h2>
             <p className="font-geist text-sm text-on-surface-variant">
-              Partidos con pronósticos
+              {todayOnly
+                ? "Partidos de hoy · hora de Chile"
+                : "Partidos con pronósticos"}
             </p>
           </div>
         </div>
+        <TodayMatchesToggle checked={todayOnly} onChange={setTodayOnly} />
       </div>
 
-      {rows.length > 0 ? (
+      {visibleRows.length > 0 ? (
         <ul className="flex flex-col gap-stack-gap p-3 sm:p-4">
-          {rows.map((row) => {
+          {visibleRows.map((row) => {
             const result = resultsByMatch[row.id_match];
             const score =
               result?.goals_home != null && result?.goals_away != null
@@ -133,7 +147,9 @@ export function MatchPredictionStatsList({
         </ul>
       ) : (
         <p className="font-geist px-5 py-8 text-sm text-muted-foreground">
-          No hay partidos en rondas con pronósticos activos.
+          {todayOnly
+            ? "No hay partidos programados para hoy."
+            : "No hay partidos en rondas con pronósticos activos."}
         </p>
       )}
     </section>

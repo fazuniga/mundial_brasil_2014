@@ -220,10 +220,10 @@ export function SpecialBetsPredictionStats({
           <MaterialIcon name="bar_chart" className="text-2xl text-accent" />
           <div className="flex flex-col gap-0">
             <h2 className="font-geist text-lg font-semibold text-on-surface">
-              ¿Qué apostó la gente?
+              Apuestas Especiales
             </h2>
             <p className="font-geist text-sm text-on-surface-variant">
-              Pronósticos agregados de Apuestas Especiales
+              Campeón, goleador y goles del torneo.
             </p>
           </div>
         </div>

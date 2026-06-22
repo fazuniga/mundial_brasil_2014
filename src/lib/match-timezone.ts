@@ -56,3 +56,52 @@ export function parseMatchKickoff(
 
   return new Date(utcMs);
 }
+
+function formatYmdInTimezone(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+/** Kickoff calendar date in MATCH_TIMEZONE (YYYY-MM-DD). */
+export function fixtureKickoffYmdInDisplayTimezone(
+  matchDate: string,
+  matchTime: string,
+): string {
+  return formatYmdInTimezone(
+    parseMatchKickoff(matchDate, matchTime),
+    MATCH_TIMEZONE,
+  );
+}
+
+export function todayYmdInDisplayTimezone(now = new Date()): string {
+  return formatYmdInTimezone(now, MATCH_TIMEZONE);
+}
+
+export function isFixtureToday(
+  matchDate: string,
+  matchTime: string,
+  now = new Date(),
+): boolean {
+  return (
+    fixtureKickoffYmdInDisplayTimezone(matchDate, matchTime) ===
+    todayYmdInDisplayTimezone(now)
+  );
+}
+
+export function filterFixturesToday<
+  T extends { match_date: string; match_time: string },
+>(fixtures: T[], todayOnly: boolean, now = new Date()): T[] {
+  if (!todayOnly) return fixtures;
+  const today = todayYmdInDisplayTimezone(now);
+  return fixtures.filter(
+    (fixture) =>
+      fixtureKickoffYmdInDisplayTimezone(
+        fixture.match_date,
+        fixture.match_time,
+      ) === today,
+  );
+}

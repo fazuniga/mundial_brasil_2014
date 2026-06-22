@@ -38,7 +38,7 @@ export function SpecialBetsSection({
   winnerSaved,
   topScorerSaved,
 }: SpecialBetsSectionProps) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const winnerPoints = rulePoints(scoringRules, "tournament_winner", 15);
   const topScorerPlayerPoints = rulePoints(scoringRules, "top_scorer_player", 10);
   const topScorerGoalsPoints = rulePoints(scoringRules, "top_scorer_goals", 15);

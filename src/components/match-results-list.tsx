@@ -1,4 +1,9 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import { MaterialIcon } from "@/components/material-icon";
+import { TodayMatchesToggle } from "@/components/today-matches-toggle";
+import { filterFixturesToday } from "@/lib/match-timezone";
 import { FixtureRowCard } from "@/components/fixture-row-card";
 import { isMatchCompleted, type MatchResultScore } from "@/lib/home-fixtures";
 import type { MatchGoalPublicRow } from "@/lib/match-goals-display";
@@ -57,6 +62,12 @@ export function MatchResultsList({
   goalsByMatch,
   predictionsByMatch,
 }: MatchResultsListProps) {
+  const [todayOnly, setTodayOnly] = useState(true);
+  const visibleFixtures = useMemo(
+    () => filterFixturesToday(fixtures, todayOnly),
+    [fixtures, todayOnly],
+  );
+
   return (
     <section className="overflow-hidden rounded-xl border border-outline-variant/60 bg-card shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-outline-variant/50 bg-surface-container-lowest p-4">
@@ -67,15 +78,18 @@ export function MatchResultsList({
               Partidos del torneo
             </h2>
             <p className="font-geist text-sm text-on-surface-variant">
-              Resultados oficiales cargados · Ordenados por fecha
+              {todayOnly
+                ? "Partidos de hoy · hora de Chile"
+                : "Resultados oficiales cargados · Ordenados por fecha"}
             </p>
           </div>
         </div>
+        <TodayMatchesToggle checked={todayOnly} onChange={setTodayOnly} />
       </div>
 
-      {fixtures.length > 0 ? (
+      {visibleFixtures.length > 0 ? (
         <ul>
-          {fixtures.map((fixture) => {
+          {visibleFixtures.map((fixture) => {
             const result = resultsByMatch[fixture.id_match];
             const score =
               result?.goals_home != null && result?.goals_away != null
@@ -112,7 +126,9 @@ export function MatchResultsList({
         </ul>
       ) : (
         <p className="font-geist px-5 py-8 text-sm text-on-surface-variant">
-          Aún no hay partidos con resultado cargado.
+          {todayOnly
+            ? "No hay partidos programados para hoy."
+            : "Aún no hay partidos con resultado cargado."}
         </p>
       )}
     </section>

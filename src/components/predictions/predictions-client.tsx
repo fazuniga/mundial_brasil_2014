@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { MaterialIcon } from "@/components/material-icon";
+import { TodayMatchesToggle } from "@/components/today-matches-toggle";
+import { filterFixturesToday } from "@/lib/match-timezone";
 import { GroupPredictionsTable } from "@/components/predictions/group-predictions-table";
 import { PredictionsSearchBar } from "@/components/predictions/predictions-search-bar";
 import { ScoringRulesCard } from "@/components/predictions/scoring-rules-card";
@@ -113,16 +115,21 @@ export function PredictionsClient({
   isAuthenticated,
 }: PredictionsClientProps) {
   const router = useRouter();
+  const [todayOnly, setTodayOnly] = useState(true);
   const [viewMode, setViewMode] = useState<FixtureViewMode>("group");
+  const visibleFixtures = useMemo(
+    () => filterFixturesToday(fixtures, todayOnly),
+    [fixtures, todayOnly],
+  );
   const sections = useMemo(() => {
     if (viewMode === "game") {
-      return groupFixturesByGame(fixtures);
+      return groupFixturesByGame(visibleFixtures);
     }
-    return groupFixturesBySection(fixtures);
-  }, [fixtures, viewMode]);
+    return groupFixturesBySection(visibleFixtures);
+  }, [visibleFixtures, viewMode]);
   const maxEnabledRound = useMemo(
-    () => getMaxEnabledPredictionRound(fixtures),
-    [fixtures],
+    () => getMaxEnabledPredictionRound(visibleFixtures),
+    [visibleFixtures],
   );
   const [searchQuery, setSearchQuery] = useState("");
   const filteredSections = useMemo(
@@ -504,34 +511,37 @@ export function PredictionsClient({
         )}
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex flex-col gap-1.5">
-            <p className="font-geist text-sm font-medium text-on-surface">Organizar</p>
-            <div
-              className="inline-flex w-fit rounded-lg border border-border/60 bg-slate-50 p-1"
-              role="group"
-              aria-label="Organizar partidos"
-            >
-              <Button
-                type="button"
-                size="sm"
-                variant={viewMode === "group" ? "default" : "ghost"}
-                className={viewMode === "group" ? "text-white" : "text-on-surface"}
-                aria-pressed={viewMode === "group"}
-                onClick={() => setViewMode("group")}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
+            <div className="flex flex-col gap-1.5">
+              <p className="font-geist text-sm font-medium text-on-surface">Organizar</p>
+              <div
+                className="inline-flex w-fit rounded-lg border border-border/60 bg-slate-50 p-1"
+                role="group"
+                aria-label="Organizar partidos"
               >
-                Por grupo
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={viewMode === "game" ? "default" : "ghost"}
-                className={viewMode === "game" ? "text-white" : "text-on-surface"}
-                aria-pressed={viewMode === "game"}
-                onClick={() => setViewMode("game")}
-              >
-                Por partido
-              </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={viewMode === "group" ? "default" : "ghost"}
+                  className={viewMode === "group" ? "text-white" : "text-on-surface"}
+                  aria-pressed={viewMode === "group"}
+                  onClick={() => setViewMode("group")}
+                >
+                  Por grupo
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={viewMode === "game" ? "default" : "ghost"}
+                  className={viewMode === "game" ? "text-white" : "text-on-surface"}
+                  aria-pressed={viewMode === "game"}
+                  onClick={() => setViewMode("game")}
+                >
+                  Por partido
+                </Button>
+              </div>
             </div>
+            <TodayMatchesToggle checked={todayOnly} onChange={setTodayOnly} />
           </div>
 
           <PredictionsSearchBar
@@ -542,7 +552,11 @@ export function PredictionsClient({
           />
         </div>
 
-        {searchQuery.trim() && filteredSections.length === 0 ? (
+        {todayOnly && !searchQuery.trim() && filteredSections.length === 0 ? (
+          <p className="font-geist text-sm text-on-surface-variant">
+            No hay partidos programados para hoy.
+          </p>
+        ) : searchQuery.trim() && filteredSections.length === 0 ? (
           <p className="font-geist text-sm text-on-surface-variant">
             Ningún partido coincide con &quot;{searchQuery.trim()}&quot;. Prueba con el
             nombre del equipo, código (ARG), grupo (Grupo A) o fase eliminatoria.
