@@ -12,7 +12,7 @@ Next.js App Router + Supabase Auth + Postgres engine ported from the Brasil 2014
 | Qualifiers | Top 2 per group | Top 2 + 8 best 3rd |
 | Bracket | Fixed 1A vs 2B | FIFA third-place matrix |
 
-Core logic preserved: `v_results` (winner/points), `predictions_open` lock 30 min before kickoff, scoring via `scoring_rules`.
+Core logic preserved: `v_results` (winner/points), `predictions_open` lock 5 min before kickoff, scoring via `scoring_rules`.
 
 ## Setup (project `rmhvjlizczjdnxoldhuc`)
 

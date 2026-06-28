@@ -6,7 +6,7 @@ Next.js App Router + Supabase Auth + Postgres tournament/polla engine ported fro
 
 ## Primary product surface (README)
 
-- **Engine:** `v_results` (winner/points), `predictions_open` (lock 30 min before kickoff), scoring via `scoring_rules`
+- **Engine:** `v_results` (winner/points), `predictions_open` (lock 5 min before kickoff), scoring via `scoring_rules`
 - **2026 format:** 48 teams, groups A–L (12), first knockout `id_round = 2` = Dieciseisavos, qualifiers top 2 + 8 best 3rd, FIFA `third_place_matrix`
 - **Seed:** `20260603000005_seed_teams_venues_matches.sql` — 48 group teams, 16 venues, 104 matches; regenerate with `node scripts/generate-seed.mjs`
 
