@@ -15,6 +15,8 @@ import {
   canSaveAdminMatch,
   isAdminMatchDirty,
   resolveRegulationScore,
+  REGULATION_CUTOFF_MINUTE,
+  STOPPAGE_2T_MIN,
 } from "@/lib/admin-utils";
 import {
   formatFixtureDateTime,
@@ -334,6 +336,7 @@ function AdminMatchForm({
     players,
     draft,
   );
+  const etDerivedFromGoals = goals.some((g) => g.minute > REGULATION_CUTOFF_MINUTE);
   const canSave = canSaveAdminMatch(
     draft,
     baseline,
@@ -346,9 +349,11 @@ function AdminMatchForm({
   return (
     <div className="space-y-4">
       <p className="font-geist text-sm text-on-surface-variant">
-        Registra cada gol del partido; el marcador de 90 minutos se calcula
-        automáticamente. En eliminatorias, indica prórroga y penales solo si
-        aplican.
+        Registra cada gol con su minuto real. Usa {STOPPAGE_2T_MIN}–
+        {STOPPAGE_2T_MIN + 8} para el tiempo añadido al final del reglamento
+        (ej. {STOPPAGE_2T_MIN + 2} = 90+3), y 91–130 para goles en prórroga.
+        El marcador a 90 min y el total en prórroga se derivan automáticamente.
+        Indica penales solo si aplican.
       </p>
 
       <AdminMatchGoals
@@ -382,24 +387,24 @@ function AdminMatchForm({
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <LabeledScoreInput
             id={`match-${fixture.id_match}-goals-home-et`}
-            label="Goles local (prórroga total)"
+            label={`Goles local (prórroga total)${etDerivedFromGoals ? " · auto" : ""}`}
             type="number"
             min={0}
             max={99}
             value={draft.goalsHomeEt}
             onChange={(e) => onDraftChange("goalsHomeEt", e.target.value)}
-            disabled={saving}
+            disabled={saving || etDerivedFromGoals}
             placeholder="Opcional"
           />
           <LabeledScoreInput
             id={`match-${fixture.id_match}-goals-away-et`}
-            label="Goles visitante (prórroga total)"
+            label={`Goles visitante (prórroga total)${etDerivedFromGoals ? " · auto" : ""}`}
             type="number"
             min={0}
             max={99}
             value={draft.goalsAwayEt}
             onChange={(e) => onDraftChange("goalsAwayEt", e.target.value)}
-            disabled={saving}
+            disabled={saving || etDerivedFromGoals}
             placeholder="Opcional"
           />
           <LabeledScoreInput

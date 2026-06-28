@@ -119,7 +119,7 @@ export function AdminClient({
     const fixture = fixtures.find((row) => row.id_match === idMatch);
     if (!fixture) return;
 
-    const regulation = deriveScoreFromGoals(
+    const { regulation, etTotal } = deriveScoreFromGoals(
       goals,
       fixture.home_team_id,
       fixture.away_team_id,
@@ -131,6 +131,8 @@ export function AdminClient({
       [idMatch]: {
         ...prev[idMatch],
         ...regulationScoreToDraft(regulation),
+        goalsHomeEt: etTotal?.goalsHome.toString() ?? "",
+        goalsAwayEt: etTotal?.goalsAway.toString() ?? "",
       },
     }));
   }
@@ -145,7 +147,7 @@ export function AdminClient({
     const fixture = fixtures.find((row) => row.id_match === idMatch);
     if (!fixture) return;
 
-    const regulation = deriveScoreFromGoals(
+    const { regulation } = deriveScoreFromGoals(
       matchGoals,
       fixture.home_team_id,
       fixture.away_team_id,
