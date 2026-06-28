@@ -152,10 +152,30 @@ export type DerivedScores = {
   etTotal: DerivedRegulationScore | null;
 };
 
-/** Goals logged past this minute count toward extra time, not regulation. */
+/**
+ * Minute encoding convention (matches minute_to_first_goal_range in SQL):
+ *   1–90          regular minutes of regulation
+ *   451–459       1st-half stoppage (45+1 … 45+9)  → enter 453 for 45+3
+ *   901–909       2nd-half stoppage (90+1 … 90+9)  → enter 903 for 90+3
+ *   91–130        extra time (ET 1st half + ET 2nd half + stoppage)
+ * Minutes outside these four ranges are rejected by parseGoalMinute.
+ */
 export const REGULATION_CUTOFF_MINUTE = 90;
-/** Maximum accepted minute for a goal entry (ET 2nd half + stoppage). */
+export const STOPPAGE_1T_MIN = 451;
+export const STOPPAGE_1T_MAX = 459;
+export const STOPPAGE_2T_MIN = 901;
+export const STOPPAGE_2T_MAX = 909;
+/** Maximum accepted minute for an ET goal entry (ET 2nd half + stoppage). */
 export const ET_MAX_MINUTE = 130;
+
+/** True for any minute that belongs to regulation time in the goal encoding. */
+function isRegulationMinute(minute: number): boolean {
+  return (
+    minute <= REGULATION_CUTOFF_MINUTE ||
+    (minute >= STOPPAGE_1T_MIN && minute <= STOPPAGE_1T_MAX) ||
+    (minute >= STOPPAGE_2T_MIN && minute <= STOPPAGE_2T_MAX)
+  );
+}
 
 export function deriveScoreFromGoals(
   goals: MatchGoalRow[],
@@ -188,7 +208,7 @@ export function deriveScoreFromGoals(
 
     etHome += addHome;
     etAway += addAway;
-    if (goal.minute <= REGULATION_CUTOFF_MINUTE) {
+    if (isRegulationMinute(goal.minute)) {
       regHome += addHome;
       regAway += addAway;
     } else {
@@ -331,10 +351,19 @@ export function parseGoalMinute(value: string): { minute: number | null; error: 
     return { minute: null, error: "Minuto inválido." };
   }
 
-  if (minute < 1 || minute > ET_MAX_MINUTE) {
+  const isValidRegulation = minute >= 1 && minute <= REGULATION_CUTOFF_MINUTE;
+  const isValidEt = minute >= REGULATION_CUTOFF_MINUTE + 1 && minute <= ET_MAX_MINUTE;
+  const isValidStoppage1T = minute >= STOPPAGE_1T_MIN && minute <= STOPPAGE_1T_MAX;
+  const isValidStoppage2T = minute >= STOPPAGE_2T_MIN && minute <= STOPPAGE_2T_MAX;
+
+  if (!isValidRegulation && !isValidEt && !isValidStoppage1T && !isValidStoppage2T) {
     return {
       minute: null,
-      error: `Indica un minuto entre 1 y ${ET_MAX_MINUTE}.`,
+      error:
+        `Minuto inválido. Usa 1–${REGULATION_CUTOFF_MINUTE} (reglamento), ` +
+        `91–${ET_MAX_MINUTE} (prórroga), ` +
+        `${STOPPAGE_1T_MIN}–${STOPPAGE_1T_MAX} (tiempo añadido 1.er tiempo, ej. 453 = 45+3), ` +
+        `${STOPPAGE_2T_MIN}–${STOPPAGE_2T_MAX} (tiempo añadido 2.º tiempo, ej. 903 = 90+3).`,
     };
   }
 

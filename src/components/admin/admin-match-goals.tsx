@@ -11,6 +11,8 @@ import {
   type DerivedFirstGoal,
   parseGoalMinute,
   playersForMatch,
+  STOPPAGE_1T_MIN,
+  STOPPAGE_2T_MIN,
 } from "@/lib/admin-utils";
 import type { AdminFixtureRow } from "@/lib/admin-types";
 import type { PlayerRow } from "@/lib/predictions-types";
@@ -137,8 +139,15 @@ export function AdminMatchGoals({
           Goles del partido
         </h3>
         <p className="font-geist text-sm text-on-surface-variant">
-          Registra cada gol. El primer gol para apuestas se toma del minuto más
-          bajo (excluye autogol).
+          Registra cada gol con su minuto exacto. El primer gol para apuestas
+          se toma del minuto más bajo (excluye autogol).
+        </p>
+        <p className="font-geist mt-1 text-xs text-on-surface-variant">
+          Minutos válidos: 1–90 (reglamento) · 91–130 (prórroga) ·{" "}
+          {STOPPAGE_1T_MIN}–{STOPPAGE_1T_MIN + 8} (tiempo añadido 1.er tiempo,
+          ej. {STOPPAGE_1T_MIN + 2} = 45+3) ·{" "}
+          {STOPPAGE_2T_MIN}–{STOPPAGE_2T_MIN + 8} (tiempo añadido 2.º tiempo
+          reglamentario, ej. {STOPPAGE_2T_MIN + 2} = 90+3)
         </p>
       </div>
 

@@ -16,6 +16,7 @@ import {
   isAdminMatchDirty,
   resolveRegulationScore,
   REGULATION_CUTOFF_MINUTE,
+  STOPPAGE_2T_MIN,
 } from "@/lib/admin-utils";
 import {
   formatFixtureDateTime,
@@ -348,9 +349,11 @@ function AdminMatchForm({
   return (
     <div className="space-y-4">
       <p className="font-geist text-sm text-on-surface-variant">
-        Registra cada gol con su minuto real (hasta {REGULATION_CUTOFF_MINUTE} para
-        reglamentario, hasta 130 para prórroga). El marcador a 90 min y el total
-        en prórroga se derivan automáticamente. Indica penales solo si aplican.
+        Registra cada gol con su minuto real. Usa {STOPPAGE_2T_MIN}–
+        {STOPPAGE_2T_MIN + 8} para el tiempo añadido al final del reglamento
+        (ej. {STOPPAGE_2T_MIN + 2} = 90+3), y 91–130 para goles en prórroga.
+        El marcador a 90 min y el total en prórroga se derivan automáticamente.
+        Indica penales solo si aplican.
       </p>
 
       <AdminMatchGoals
