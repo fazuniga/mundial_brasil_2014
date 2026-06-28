@@ -12,6 +12,7 @@ import {
 } from "@/lib/group-standings";
 import { buildResultsByMatch, type MatchResultScore } from "@/lib/home-fixtures";
 import { buildGoalsByMatch } from "@/lib/match-goals-display";
+import { FIXTURE_SELECT, FIXTURE_VIEW } from "@/lib/fixture-query";
 import type { FixtureRow, PredictionRow } from "@/lib/predictions-types";
 import { ensureUserPool } from "@/lib/predictions-utils";
 
@@ -58,10 +59,8 @@ export default async function PartidosPage({ searchParams }: PartidosPageProps) 
       .order("goal_diff", { ascending: false })
       .order("goals_for", { ascending: false }),
     supabase
-      .from("v_fixture")
-      .select(
-        "id_match, id_round, name_round, group_code, dow, match_date, match_time, home_code, home_country, away_code, away_country, city, stadium, round_predictions_enabled, predictions_open",
-      )
+      .from(FIXTURE_VIEW)
+      .select(FIXTURE_SELECT)
       .order("match_date")
       .order("match_time"),
     supabase.from("match_results").select("id_match, goals_home, goals_away"),

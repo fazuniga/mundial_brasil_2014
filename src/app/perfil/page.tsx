@@ -3,6 +3,7 @@ import { ProfileDashboard } from "@/components/profile/profile-dashboard";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SiteHeader } from "@/components/site-header";
 import type { PoolRankingRow } from "@/lib/pool-rankings-types";
+import { FIXTURE_SELECT, FIXTURE_VIEW } from "@/lib/fixture-query";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProfilePage() {
@@ -34,10 +35,8 @@ export default async function ProfilePage() {
       .order("id_pool")
       .limit(1),
     supabase
-      .from("v_fixture")
-      .select(
-        "id_match, id_round, name_round, group_code, dow, match_date, match_time, home_code, home_country, away_code, away_country, city, stadium, round_predictions_enabled, predictions_open",
-      )
+      .from(FIXTURE_VIEW)
+      .select(FIXTURE_SELECT)
       .order("match_date")
       .order("match_time"),
     supabase

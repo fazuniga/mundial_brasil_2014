@@ -5,6 +5,7 @@ import { MaterialIcon } from "@/components/material-icon";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SiteHeader } from "@/components/site-header";
 import { PredictionsClient } from "@/components/predictions/predictions-client";
+import { FIXTURE_SELECT, FIXTURE_VIEW } from "@/lib/fixture-query";
 import type { FixtureRow, PlayerRow, PredictionRow, TeamRow } from "@/lib/predictions-types";
 import type { MatchResultDetail, SideBetOutcome } from "@/lib/prediction-scoring";
 import { formatPredictionLockWindowLabel } from "@/lib/prediction-lock";
@@ -38,10 +39,8 @@ export default async function ApuestasPage() {
     { data: resultsRaw },
   ] = await Promise.all([
     supabase
-      .from("v_fixture")
-      .select(
-        "id_match, id_round, name_round, group_code, dow, match_date, match_time, home_code, home_country, away_code, away_country, city, stadium, round_predictions_enabled, predictions_open",
-      )
+      .from(FIXTURE_VIEW)
+      .select(FIXTURE_SELECT)
       .order("match_date")
       .order("match_time"),
     supabase.from("scoring_rules").select("id, rule_key, points").order("scoring_rules_order"),
