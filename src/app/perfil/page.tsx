@@ -4,6 +4,7 @@ import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SiteHeader } from "@/components/site-header";
 import type { PoolRankingRow } from "@/lib/pool-rankings-types";
 import { FIXTURE_SELECT, FIXTURE_VIEW } from "@/lib/fixture-query";
+import { filterEnabledRoundFixtures } from "@/lib/predictions-utils";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProfilePage() {
@@ -51,7 +52,7 @@ export default async function ProfilePage() {
 
   const isAdmin = profile?.is_admin ?? false;
   const poolId = pools?.[0]?.id_pool ?? null;
-  const fixtures = fixturesRaw ?? [];
+  const fixtures = filterEnabledRoundFixtures(fixturesRaw ?? []);
   const ranking = (rankingsRaw ?? null) as PoolRankingRow | null;
 
   const predictedMatchIds = new Set<number>();

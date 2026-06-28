@@ -1,11 +1,14 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { ensureUserPool } from "@/lib/predictions-utils";
 import { MaterialIcon } from "@/components/material-icon";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SiteHeader } from "@/components/site-header";
 import { PredictionsClient } from "@/components/predictions/predictions-client";
 import { FIXTURE_SELECT, FIXTURE_VIEW } from "@/lib/fixture-query";
+import {
+  ensureUserPool,
+  filterEnabledRoundFixtures,
+} from "@/lib/predictions-utils";
 import type { FixtureRow, PlayerRow, PredictionRow, TeamRow } from "@/lib/predictions-types";
 import type { MatchResultDetail, SideBetOutcome } from "@/lib/prediction-scoring";
 import { formatPredictionLockWindowLabel } from "@/lib/prediction-lock";
@@ -64,7 +67,9 @@ export default async function ApuestasPage() {
       ),
   ]);
 
-  const fixtures = sortFixtures((fixturesRaw ?? []) as FixtureRow[]);
+  const fixtures = sortFixtures(
+    filterEnabledRoundFixtures((fixturesRaw ?? []) as FixtureRow[]),
+  );
   const players = (playersRaw ?? []) as PlayerRow[];
   const teams: TeamRow[] = (teamsRaw ?? []).map((row) => {
     const nested = row.groups as { group_code: string } | { group_code: string }[] | null;

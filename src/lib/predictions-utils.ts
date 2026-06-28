@@ -35,6 +35,13 @@ export function isKnockoutFixture(fixture: Pick<FixtureRow, "id_round">): boolea
   return fixture.id_round > 1;
 }
 
+/** Public fixture lists: only rounds with predictions_enabled in Fases del torneo. */
+export function filterEnabledRoundFixtures<
+  T extends Pick<FixtureRow, "round_predictions_enabled">,
+>(fixtures: T[]): T[] {
+  return fixtures.filter((fixture) => fixture.round_predictions_enabled);
+}
+
 export type FixturePredictionLock = "open" | "round_closed" | "kickoff_closed";
 
 export function getFixturePredictionLock(

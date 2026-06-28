@@ -13,6 +13,7 @@ import {
 import { buildResultsByMatch, type MatchResultScore } from "@/lib/home-fixtures";
 import { buildGoalsByMatch } from "@/lib/match-goals-display";
 import { FIXTURE_SELECT, FIXTURE_VIEW } from "@/lib/fixture-query";
+import { filterEnabledRoundFixtures } from "@/lib/predictions-utils";
 import type { FixtureRow, PredictionRow } from "@/lib/predictions-types";
 import { ensureUserPool } from "@/lib/predictions-utils";
 
@@ -80,7 +81,7 @@ export default async function PartidosPage({ searchParams }: PartidosPageProps) 
     (resultsRaw ?? []) as MatchResultScore[],
   );
   const goalsByMatch = buildGoalsByMatch(goalsRaw ?? []);
-  const fixtures = (fixturesRaw ?? []) as FixtureRow[];
+  const fixtures = filterEnabledRoundFixtures((fixturesRaw ?? []) as FixtureRow[]);
 
   const predictionsByMatch: Record<number, PredictionRow> = {};
   if (user && view === "partido") {
