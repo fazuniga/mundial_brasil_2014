@@ -141,31 +141,65 @@ export type DerivedRegulationScore = {
   goalsAway: number;
 };
 
+export type DerivedScores = {
+  /** Goals scored through the end of regulation (minute ≤ 90). */
+  regulation: DerivedRegulationScore;
+  /**
+   * Cumulative goals through the end of extra time (minute ≤ ET_MAX_MINUTE).
+   * Null when no goal was logged past minute 90 — use this to leave
+   * goals_home_et / goals_away_et as NULL in match_results.
+   */
+  etTotal: DerivedRegulationScore | null;
+};
+
+/** Goals logged past this minute count toward extra time, not regulation. */
+export const REGULATION_CUTOFF_MINUTE = 90;
+/** Maximum accepted minute for a goal entry (ET 2nd half + stoppage). */
+export const ET_MAX_MINUTE = 130;
+
 export function deriveScoreFromGoals(
   goals: MatchGoalRow[],
   homeTeamId: number,
   awayTeamId: number,
   players: PlayerRow[],
-): DerivedRegulationScore {
+): DerivedScores {
   const teamByPlayer = new Map(players.map((player) => [player.id_player, player.id_team]));
-  let goalsHome = 0;
-  let goalsAway = 0;
+  let regHome = 0;
+  let regAway = 0;
+  let etHome = 0;
+  let etAway = 0;
+  let hasEtGoal = false;
 
   for (const goal of goals) {
     const scorerTeam = teamByPlayer.get(goal.id_player);
     if (scorerTeam == null) continue;
 
+    let addHome = 0;
+    let addAway = 0;
     if (goal.is_own_goal) {
-      if (scorerTeam === homeTeamId) goalsAway += 1;
-      else if (scorerTeam === awayTeamId) goalsHome += 1;
-    } else if (scorerTeam === homeTeamId) {
-      goalsHome += 1;
-    } else if (scorerTeam === awayTeamId) {
-      goalsAway += 1;
+      if (scorerTeam === homeTeamId) addAway = 1;
+      else if (scorerTeam === awayTeamId) addHome = 1;
+    } else {
+      if (scorerTeam === homeTeamId) addHome = 1;
+      else if (scorerTeam === awayTeamId) addAway = 1;
+    }
+
+    if (addHome === 0 && addAway === 0) continue;
+
+    etHome += addHome;
+    etAway += addAway;
+    if (goal.minute <= REGULATION_CUTOFF_MINUTE) {
+      regHome += addHome;
+      regAway += addAway;
+    } else {
+      hasEtGoal = true;
     }
   }
 
-  return { goalsHome, goalsAway };
+  return {
+    regulation: { goalsHome: regHome, goalsAway: regAway },
+    etTotal: hasEtGoal ? { goalsHome: etHome, goalsAway: etAway } : null,
+  };
 }
 
 /** Goals list when present; otherwise saved draft from match_results. */
@@ -177,7 +211,7 @@ export function resolveRegulationScore(
   draft: MatchResultDraft,
 ): DerivedRegulationScore {
   if (goals.length > 0) {
-    return deriveScoreFromGoals(goals, homeTeamId, awayTeamId, players);
+    return deriveScoreFromGoals(goals, homeTeamId, awayTeamId, players).regulation;
   }
 
   const goalsHome = Number.parseInt(draft.goalsHome, 10);
@@ -297,10 +331,10 @@ export function parseGoalMinute(value: string): { minute: number | null; error: 
     return { minute: null, error: "Minuto inválido." };
   }
 
-  if (minute < 1 || minute > 120) {
+  if (minute < 1 || minute > ET_MAX_MINUTE) {
     return {
       minute: null,
-      error: "Indica un minuto entre 1 y 120.",
+      error: `Indica un minuto entre 1 y ${ET_MAX_MINUTE}.`,
     };
   }
 
