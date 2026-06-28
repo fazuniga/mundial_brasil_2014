@@ -16,8 +16,9 @@ const GROUP_STAGE_ROUND_ID = 1;
 const GROUP_STAGE_SECTION_TITLE = "Fase de Grupos";
 
 /**
- * Admin fixture list: group stage always; knockouts only when that round is
- * enabled in Fases del torneo (rounds.predictions_enabled).
+ * Admin fixture list: Fase de Grupos always (marcadores); each knockout round only
+ * when that round is enabled in Fases del torneo. Later knockouts stay hidden
+ * until their phase is opened — opening Dieciseisavos does not reveal Octavos+.
  */
 export function filterAdminVisibleFixtures<
   T extends Pick<FixtureRow, "id_round" | "round_predictions_enabled">,
