@@ -71,12 +71,26 @@ export function getMaxEnabledPredictionRound(
   return max;
 }
 
+/** True when every fixture in the section is past its prediction window (kickoff lock). */
+export function isPredictionSectionPast(
+  sectionFixtures: Pick<FixtureRow, "predictions_open">[],
+): boolean {
+  return (
+    sectionFixtures.length > 0 &&
+    sectionFixtures.every((fixture) => !fixture.predictions_open)
+  );
+}
+
 /**
- * Collapse inactive rounds and any phase after the latest enabled id_round
- * (future phases stay collapsed even if mistakenly re-enabled).
+ * Open only sections in enabled rounds at or before the latest enabled id_round
+ * that still have at least one match accepting predictions. Past groups/phases
+ * (all matches locked) and future phases stay collapsed by default.
  */
 export function isPredictionSectionDefaultOpen(
-  sectionFixtures: Pick<FixtureRow, "id_round" | "round_predictions_enabled">[],
+  sectionFixtures: Pick<
+    FixtureRow,
+    "id_round" | "round_predictions_enabled" | "predictions_open"
+  >[],
   maxEnabledRound: number | null,
 ): boolean {
   if (sectionFixtures.length === 0 || maxEnabledRound === null) return false;
@@ -86,7 +100,10 @@ export function isPredictionSectionDefaultOpen(
     (fixture) => fixture.round_predictions_enabled,
   );
 
-  return hasEnabledFixture && sectionIdRound <= maxEnabledRound;
+  if (!hasEnabledFixture || sectionIdRound > maxEnabledRound) return false;
+  if (isPredictionSectionPast(sectionFixtures)) return false;
+
+  return true;
 }
 
 export async function ensureUserPool(
