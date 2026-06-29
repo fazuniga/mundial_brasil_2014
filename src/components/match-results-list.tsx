@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { MaterialIcon } from "@/components/material-icon";
+import { PredictionsSearchBar } from "@/components/predictions/predictions-search-bar";
 import { TodayMatchesToggle } from "@/components/today-matches-toggle";
 import { filterFixturesToday } from "@/lib/match-timezone";
 import { FixtureRowCard } from "@/components/fixture-row-card";
@@ -9,6 +10,7 @@ import { isMatchCompleted, type MatchResultScore } from "@/lib/home-fixtures";
 import type { MatchGoalPublicRow } from "@/lib/match-goals-display";
 import { formatScore, firstGoalRangeLabel } from "@/lib/prediction-scoring";
 import { scoringRuleLabel } from "@/lib/scoring-labels";
+import { fixtureMatchesSearch } from "@/lib/predictions-utils";
 import type { FixtureRow, PredictionRow } from "@/lib/predictions-types";
 
 type MatchResultsListProps = {
@@ -63,33 +65,47 @@ export function MatchResultsList({
   predictionsByMatch,
 }: MatchResultsListProps) {
   const [todayOnly, setTodayOnly] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const visibleFixtures = useMemo(
     () => filterFixturesToday(fixtures, todayOnly),
     [fixtures, todayOnly],
   );
+  const filteredFixtures = useMemo(() => {
+    const q = searchQuery.trim();
+    if (!q) return visibleFixtures;
+    return visibleFixtures.filter((fixture) => fixtureMatchesSearch(fixture, q));
+  }, [visibleFixtures, searchQuery]);
 
   return (
     <section className="overflow-hidden rounded-xl border border-outline-variant/60 bg-card shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-outline-variant/50 bg-surface-container-lowest p-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <MaterialIcon name="sports_soccer" className="text-2xl text-accent" />
-          <div className="flex flex-col gap-0">
-            <h2 className="font-geist text-lg font-semibold text-on-surface">
-              Partidos del torneo
-            </h2>
-            <p className="font-geist text-sm text-on-surface-variant">
-              {todayOnly
-                ? "Partidos de hoy · hora de Chile"
-                : "Resultados oficiales cargados · Ordenados por fecha"}
-            </p>
+      <div className="flex flex-col gap-4 border-b border-outline-variant/50 bg-surface-container-lowest p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <MaterialIcon name="sports_soccer" className="text-2xl text-accent" />
+            <div className="flex flex-col gap-0">
+              <h2 className="font-geist text-lg font-semibold text-on-surface">
+                Partidos del torneo
+              </h2>
+              <p className="font-geist text-sm text-on-surface-variant">
+                {todayOnly
+                  ? "Partidos de hoy · hora de Chile"
+                  : "Resultados oficiales cargados · Ordenados por fecha"}
+              </p>
+            </div>
           </div>
+          <TodayMatchesToggle checked={todayOnly} onChange={setTodayOnly} />
         </div>
-        <TodayMatchesToggle checked={todayOnly} onChange={setTodayOnly} />
+
+        <PredictionsSearchBar
+          value={searchQuery}
+          onChange={setSearchQuery}
+          resultCount={searchQuery.trim() ? filteredFixtures.length : undefined}
+        />
       </div>
 
-      {visibleFixtures.length > 0 ? (
+      {filteredFixtures.length > 0 ? (
         <ul>
-          {visibleFixtures.map((fixture) => {
+          {filteredFixtures.map((fixture) => {
             const result = resultsByMatch[fixture.id_match];
             const score =
               result?.goals_home != null && result?.goals_away != null
@@ -126,9 +142,11 @@ export function MatchResultsList({
         </ul>
       ) : (
         <p className="font-geist px-5 py-8 text-sm text-on-surface-variant">
-          {todayOnly
-            ? "No hay partidos programados para hoy."
-            : "Aún no hay partidos con resultado cargado."}
+          {searchQuery.trim()
+            ? `Ningún partido coincide con "${searchQuery.trim()}". Prueba con el nombre del equipo, código (ARG), grupo (Grupo A) o fase eliminatoria.`
+            : todayOnly
+              ? "No hay partidos programados para hoy."
+              : "Aún no hay partidos con resultado cargado."}
         </p>
       )}
     </section>
