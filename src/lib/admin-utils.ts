@@ -155,16 +155,17 @@ export type DerivedScores = {
 /**
  * Minute encoding convention (matches minute_to_first_goal_range in SQL):
  *   1–90          regular minutes of regulation
- *   451–459       1st-half stoppage (45+1 … 45+9)  → enter 453 for 45+3
- *   901–909       2nd-half stoppage (90+1 … 90+9)  → enter 903 for 90+3
+ *   451–475       1st-half stoppage (45+1 … 45+25)  → enter 453 for 45+3
+ *   901–925       2nd-half stoppage (90+1 … 90+25)  → enter 903 for 90+3
  *   91–130        extra time (ET 1st half + ET 2nd half + stoppage)
  * Minutes outside these four ranges are rejected by parseGoalMinute.
  */
 export const REGULATION_CUTOFF_MINUTE = 90;
+export const STOPPAGE_MAX_MINUTES = 25;
 export const STOPPAGE_1T_MIN = 451;
-export const STOPPAGE_1T_MAX = 459;
+export const STOPPAGE_1T_MAX = STOPPAGE_1T_MIN + STOPPAGE_MAX_MINUTES - 1;
 export const STOPPAGE_2T_MIN = 901;
-export const STOPPAGE_2T_MAX = 909;
+export const STOPPAGE_2T_MAX = STOPPAGE_2T_MIN + STOPPAGE_MAX_MINUTES - 1;
 /** Maximum accepted minute for an ET goal entry (ET 2nd half + stoppage). */
 export const ET_MAX_MINUTE = 130;
 

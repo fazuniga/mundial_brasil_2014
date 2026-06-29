@@ -13,7 +13,9 @@ import {
   formatGoalMinuteDisplay,
   parseGoalMinute,
   playersForMatch,
+  STOPPAGE_1T_MAX,
   STOPPAGE_1T_MIN,
+  STOPPAGE_2T_MAX,
   STOPPAGE_2T_MIN,
 } from "@/lib/admin-utils";
 import type { AdminFixtureRow } from "@/lib/admin-types";
@@ -149,9 +151,9 @@ export function AdminMatchGoals({
         </p>
         <p className="font-geist mt-1 text-xs text-on-surface-variant">
           Minutos válidos: 1–90 (reglamento) · 91–130 (prórroga) ·{" "}
-          {STOPPAGE_1T_MIN}–{STOPPAGE_1T_MIN + 8} (tiempo añadido 1.er tiempo,
+          {STOPPAGE_1T_MIN}–{STOPPAGE_1T_MAX} (tiempo añadido 1.er tiempo,
           ej. {STOPPAGE_1T_MIN + 2} = 45+3) ·{" "}
-          {STOPPAGE_2T_MIN}–{STOPPAGE_2T_MIN + 8} (tiempo añadido 2.º tiempo
+          {STOPPAGE_2T_MIN}–{STOPPAGE_2T_MAX} (tiempo añadido 2.º tiempo
           reglamentario, ej. {STOPPAGE_2T_MIN + 2} = 90+3)
         </p>
       </div>
@@ -223,7 +225,7 @@ export function AdminMatchGoals({
             id={`goal-minute-${fixture.id_match}`}
             type="number"
             min={1}
-            max={120}
+            max={STOPPAGE_2T_MAX}
             value={minute}
             onChange={(e) => setMinute(e.target.value)}
             disabled={saving || adding}
