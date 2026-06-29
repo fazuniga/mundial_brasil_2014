@@ -1,3 +1,5 @@
+import { compareGoalMinutes, formatGoalMinuteDisplay } from "@/lib/admin-utils";
+
 export type MatchGoalPublicRow = {
   id_goal: number;
   id_match: number;
@@ -59,7 +61,8 @@ export function buildGoalsByMatch(
 
   for (const idMatch of Object.keys(map)) {
     map[Number(idMatch)].sort(
-      (left, right) => left.minute - right.minute || left.id_goal - right.id_goal,
+      (left, right) =>
+        compareGoalMinutes(left.minute, right.minute) || left.id_goal - right.id_goal,
     );
   }
 
@@ -81,7 +84,7 @@ export function goalCreditsSide(
 }
 
 export function formatGoalLabel(goal: MatchGoalPublicRow): string {
-  const minute = `${goal.minute}'`;
+  const minute = `${formatGoalMinuteDisplay(goal.minute)}'`;
   if (goal.is_own_goal) {
     return `${minute} ${goal.player_name} (autogol)`;
   }
