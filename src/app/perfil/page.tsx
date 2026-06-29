@@ -43,7 +43,7 @@ export default async function ProfilePage() {
     supabase
       .from("v_pool_rankings")
       .select(
-        "id_pool, owner_id, display_name, username, is_paid_group_phase, is_paid_knockout, bets_placed, match_points, exact_hits, goal_diff_hits, winner_hits, side_bet_points, tournament_points, total_points, rank_position",
+        "id_pool, owner_id, display_name, username, is_paid_group_phase, is_paid_knockout, bets_placed, match_points, exact_hits, goal_diff_hits, winner_hits, extra_time_hits, first_goal_hits, side_bet_points, tournament_points, total_points, rank_position",
       )
       .eq("owner_id", user.id)
       .maybeSingle(),

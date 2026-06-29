@@ -87,11 +87,8 @@ export function ProfileDashboard({
         { label: scoringRuleLabel("exact_score"), value: ranking.exact_hits },
         { label: scoringRuleLabel("goal_difference"), value: ranking.goal_diff_hits },
         { label: scoringRuleLabel("winner"), value: ranking.winner_hits },
-        {
-          label: `${scoringRuleLabel("extra_time")} + ${scoringRuleLabel("first_goal_minute")}`,
-          value: ranking.side_bet_points,
-          isPoints: true,
-        },
+        { label: scoringRuleLabel("extra_time"), value: ranking.extra_time_hits },
+        { label: scoringRuleLabel("first_goal_minute"), value: ranking.first_goal_hits },
         {
           label: `${scoringRuleLabel("tournament_winner")} + ${scoringRuleLabel("top_scorer_player")}`,
           value: ranking.tournament_points,

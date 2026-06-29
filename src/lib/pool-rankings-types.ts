@@ -10,6 +10,8 @@ export type PoolRankingRow = {
   exact_hits: number;
   goal_diff_hits: number;
   winner_hits: number;
+  extra_time_hits: number;
+  first_goal_hits: number;
   side_bet_points: number;
   tournament_points: number;
   total_points: number;

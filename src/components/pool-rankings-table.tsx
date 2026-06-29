@@ -157,6 +157,8 @@ function gridColumns(variant: "compact" | "full"): string {
     "minmax(4rem,1fr)",
     "minmax(4rem,1fr)",
     "minmax(4rem,1fr)",
+    "minmax(4rem,1fr)",
+    "minmax(4rem,1fr)",
   ].join(" ");
 }
 
@@ -203,7 +205,10 @@ function RankingRow({
             {row.winner_hits}
           </div>
           <div role="cell" className="text-base px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3">
-            {row.side_bet_points}
+            {row.extra_time_hits}
+          </div>
+          <div role="cell" className="text-base px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3">
+            {row.first_goal_hits}
           </div>
           <div role="cell" className="text-base px-2 py-2 text-center tabular-nums sm:px-3 sm:py-3">
             {row.tournament_points}
@@ -266,8 +271,19 @@ function RankingsHeader({ variant }: { variant: "compact" | "full" }) {
           >
             Ganador
           </div>
-          <div role="columnheader" className={cn(compactPad, "text-center")}>
-            Apuestas
+          <div
+            role="columnheader"
+            className={cn(compactPad, "text-center")}
+            title={scoringRuleLabel("extra_time")}
+          >
+            Prór.
+          </div>
+          <div
+            role="columnheader"
+            className={cn(compactPad, "text-center")}
+            title={scoringRuleLabel("first_goal_minute")}
+          >
+            1er gol
           </div>
           <div role="columnheader" className={cn(compactPad, "text-center")}>
             Torneo
@@ -296,7 +312,8 @@ export function PoolRankingsTable({ rows, currentUserId }: PoolRankingsTableProp
       r.exact_hits > 0 ||
       r.goal_diff_hits > 0 ||
       r.winner_hits > 0 ||
-      r.side_bet_points > 0 ||
+      r.extra_time_hits > 0 ||
+      r.first_goal_hits > 0 ||
       r.tournament_points > 0,
   );
 
