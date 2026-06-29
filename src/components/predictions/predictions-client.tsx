@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { MaterialIcon } from "@/components/material-icon";
+import { RoundStageFilter } from "@/components/round-stage-filter";
 import { TodayMatchesToggle } from "@/components/today-matches-toggle";
 import { filterFixturesToday } from "@/lib/match-timezone";
 import { GroupPredictionsTable } from "@/components/predictions/group-predictions-table";
@@ -20,12 +21,14 @@ import type {
   ScoringRuleRow,
   TeamRow,
   TournamentPredictionRow,
+  RoundPhaseRow,
 } from "@/lib/predictions-types";
 import type { MatchResultDetail, SideBetOutcome } from "@/lib/prediction-scoring";
 import {
   draftHasAnyValue,
   draftsAreEqual,
   ensureUserPool,
+  filterFixturesByRound,
   filterSectionsBySearch,
   getMaxEnabledPredictionRound,
   groupFixturesByGame,
@@ -53,6 +56,20 @@ import {
 
 type FixtureViewMode = "group" | "game";
 
+function buildRoundFilterUrl(
+  path: string,
+  roundId: number | null,
+  extraSearchParams?: Record<string, string>,
+): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(extraSearchParams ?? {})) {
+    if (value) params.set(key, value);
+  }
+  if (roundId != null) params.set("ronda", roundId.toString());
+  const query = params.toString();
+  return query ? `${path}?${query}` : path;
+}
+
 type PredictionsClientProps = {
   fixtures: FixtureRow[];
   scoringRules: ScoringRuleRow[];
@@ -61,6 +78,9 @@ type PredictionsClientProps = {
   sideBetsByMatch: Record<number, SideBetOutcome>;
   players: PlayerRow[];
   teams: TeamRow[];
+  rounds?: Pick<RoundPhaseRow, "id_round" | "name_round">[];
+  initialRoundId?: number | null;
+  syncRoundToUrl?: boolean;
   tournamentPrediction: TournamentPredictionRow | null;
   tournamentBetOpen: boolean;
   poolId: number | null;
@@ -109,27 +129,46 @@ export function PredictionsClient({
   sideBetsByMatch,
   players,
   teams,
+  rounds,
+  initialRoundId = null,
+  syncRoundToUrl = false,
   tournamentPrediction,
   tournamentBetOpen,
   poolId,
   isAuthenticated,
 }: PredictionsClientProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [todayOnly, setTodayOnly] = useState(true);
   const [viewMode, setViewMode] = useState<FixtureViewMode>("group");
+  const [roundId, setRoundId] = useState<number | null>(initialRoundId);
+
+  useEffect(() => {
+    setRoundId(initialRoundId);
+  }, [initialRoundId]);
+
+  const selectedRound = useMemo(
+    () => rounds?.find((round) => round.id_round === roundId) ?? null,
+    [rounds, roundId],
+  );
+
   const visibleFixtures = useMemo(
     () => filterFixturesToday(fixtures, todayOnly),
     [fixtures, todayOnly],
   );
+  const roundFilteredFixtures = useMemo(
+    () => filterFixturesByRound(visibleFixtures, roundId),
+    [visibleFixtures, roundId],
+  );
   const sections = useMemo(() => {
     if (viewMode === "game") {
-      return groupFixturesByGame(visibleFixtures);
+      return groupFixturesByGame(roundFilteredFixtures);
     }
-    return groupFixturesBySection(visibleFixtures);
-  }, [visibleFixtures, viewMode]);
+    return groupFixturesBySection(roundFilteredFixtures);
+  }, [roundFilteredFixtures, viewMode]);
   const maxEnabledRound = useMemo(
-    () => getMaxEnabledPredictionRound(visibleFixtures),
-    [visibleFixtures],
+    () => getMaxEnabledPredictionRound(roundFilteredFixtures),
+    [roundFilteredFixtures],
   );
   const [searchQuery, setSearchQuery] = useState("");
   const filteredSections = useMemo(
@@ -140,6 +179,17 @@ export function PredictionsClient({
     () => filteredSections.reduce((sum, s) => sum + s.fixtures.length, 0),
     [filteredSections],
   );
+
+  function handleRoundChange(value: string) {
+    const nextRoundId = value ? Number.parseInt(value, 10) : null;
+    const parsedRoundId =
+      nextRoundId != null && Number.isFinite(nextRoundId) ? nextRoundId : null;
+    setRoundId(parsedRoundId);
+
+    if (syncRoundToUrl && pathname) {
+      router.replace(buildRoundFilterUrl(pathname, parsedRoundId));
+    }
+  }
 
   const [drafts, setDrafts] = useState(() =>
     buildInitialDrafts(fixtures, predictionsByMatch),
@@ -541,18 +591,32 @@ export function PredictionsClient({
                 </Button>
               </div>
             </div>
+            {rounds && rounds.length > 0 ? (
+              <RoundStageFilter
+                id="apuestas-round-stage"
+                rounds={rounds}
+                value={roundId?.toString() ?? ""}
+                onChange={handleRoundChange}
+                className="w-full sm:max-w-xs"
+              />
+            ) : null}
             <TodayMatchesToggle checked={todayOnly} onChange={setTodayOnly} />
           </div>
 
           <PredictionsSearchBar
             value={searchQuery}
             onChange={setSearchQuery}
-            resultCount={searchQuery.trim() ? filteredMatchCount : undefined}
+            resultCount={
+              searchQuery.trim() || roundId != null ? filteredMatchCount : undefined
+            }
             className="min-w-0 flex-1 sm:max-w-md"
           />
         </div>
 
-        {todayOnly && !searchQuery.trim() && filteredSections.length === 0 ? (
+        {todayOnly &&
+        !searchQuery.trim() &&
+        roundId == null &&
+        filteredSections.length === 0 ? (
           <p className="font-geist text-sm text-on-surface-variant">
             No hay partidos programados para hoy.
           </p>
@@ -560,6 +624,11 @@ export function PredictionsClient({
           <p className="font-geist text-sm text-on-surface-variant">
             Ningún partido coincide con &quot;{searchQuery.trim()}&quot;. Prueba con el
             nombre del equipo, código (ARG), grupo (Grupo A) o fase eliminatoria.
+          </p>
+        ) : roundId != null && selectedRound && filteredSections.length === 0 ? (
+          <p className="font-geist text-sm text-on-surface-variant">
+            No hay partidos en {selectedRound.name_round}
+            {todayOnly ? " para hoy" : ""}.
           </p>
         ) : (
           filteredSections.map((section) => (
