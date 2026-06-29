@@ -9,6 +9,8 @@ import type { MatchPredictionStatsRow } from "@/lib/closed-match-prediction-stat
 import { fetchSpecialBetsPredictionStats } from "@/lib/fetch-special-bets-stats";
 import { buildResultsByMatch, type MatchResultScore } from "@/lib/home-fixtures";
 import { buildGoalsByMatch } from "@/lib/match-goals-display";
+import { parseRoundSearchParam } from "@/lib/predictions-utils";
+import type { RoundPhaseRow } from "@/lib/predictions-types";
 import { formatPredictionLockWindowShort } from "@/lib/prediction-lock";
 
 export const metadata: Metadata = {
@@ -24,7 +26,14 @@ function sortMatchStats(rows: MatchPredictionStatsRow[]): MatchPredictionStatsRo
   });
 }
 
-export default async function EstadisticasPage() {
+type EstadisticasPageProps = {
+  searchParams: Promise<{ ronda?: string }>;
+};
+
+export default async function EstadisticasPage({ searchParams }: EstadisticasPageProps) {
+  const { ronda } = await searchParams;
+  const initialRoundId = parseRoundSearchParam(ronda);
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -47,6 +56,7 @@ export default async function EstadisticasPage() {
     { data: resultsRaw },
     { data: goalsRaw },
     specialBetsPredictionStats,
+    { data: roundsRaw },
   ] = await Promise.all([
     supabase
       .from("v_match_prediction_stats")
@@ -62,6 +72,7 @@ export default async function EstadisticasPage() {
       .order("id_match")
       .order("minute"),
     fetchSpecialBetsPredictionStats(supabase),
+    supabase.from("rounds").select("id_round, name_round").order("id_round"),
   ]);
 
   const matchStats = sortMatchStats((matchStatsRaw ?? []) as MatchPredictionStatsRow[]);
@@ -69,6 +80,7 @@ export default async function EstadisticasPage() {
     (resultsRaw ?? []) as MatchResultScore[],
   );
   const goalsByMatch = buildGoalsByMatch(goalsRaw ?? []);
+  const rounds = (roundsRaw ?? []) as Pick<RoundPhaseRow, "id_round" | "name_round">[];
 
   return (
     <>
@@ -101,6 +113,9 @@ export default async function EstadisticasPage() {
             rows={matchStats}
             resultsByMatch={resultsByMatch}
             goalsByMatch={goalsByMatch}
+            rounds={rounds}
+            initialRoundId={initialRoundId}
+            syncRoundToUrl
           />
         )}
       </main>

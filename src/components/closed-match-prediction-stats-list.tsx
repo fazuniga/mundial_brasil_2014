@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { MaterialIcon } from "@/components/material-icon";
+import { RoundStageFilter } from "@/components/round-stage-filter";
 import { TodayMatchesToggle } from "@/components/today-matches-toggle";
 import { FixtureRowCard } from "@/components/fixture-row-card";
 import {
@@ -11,15 +13,24 @@ import {
 import type { MatchResultScore } from "@/lib/home-fixtures";
 import type { MatchGoalPublicRow } from "@/lib/match-goals-display";
 import { filterFixturesToday } from "@/lib/match-timezone";
-import { getFixturePredictionLock } from "@/lib/predictions-utils";
+import { filterFixturesByRound, getFixturePredictionLock } from "@/lib/predictions-utils";
 import { formatPredictionLockWindowShort } from "@/lib/prediction-lock";
+import type { RoundPhaseRow } from "@/lib/predictions-types";
 import { cn } from "@/lib/utils";
 
 type MatchPredictionStatsListProps = {
   rows: MatchPredictionStatsRow[];
   resultsByMatch: Record<number, MatchResultScore>;
   goalsByMatch: Record<number, MatchGoalPublicRow[]>;
+  rounds?: Pick<RoundPhaseRow, "id_round" | "name_round">[];
+  initialRoundId?: number | null;
+  syncRoundToUrl?: boolean;
 };
+
+function buildRoundFilterUrl(path: string, roundId: number | null): string {
+  if (roundId == null) return path;
+  return `${path}?ronda=${roundId}`;
+}
 
 function predictionLockLabel(row: MatchPredictionStatsRow): string {
   const lock = getFixturePredictionLock(row);
@@ -95,35 +106,90 @@ export function MatchPredictionStatsList({
   rows,
   resultsByMatch,
   goalsByMatch,
+  rounds,
+  initialRoundId = null,
+  syncRoundToUrl = false,
 }: MatchPredictionStatsListProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [todayOnly, setTodayOnly] = useState(true);
+  const [roundId, setRoundId] = useState<number | null>(initialRoundId);
+
+  useEffect(() => {
+    setRoundId(initialRoundId);
+  }, [initialRoundId]);
+
+  const selectedRound = useMemo(
+    () => rounds?.find((round) => round.id_round === roundId) ?? null,
+    [rounds, roundId],
+  );
+
   const visibleRows = useMemo(
     () => filterFixturesToday(rows, todayOnly),
     [rows, todayOnly],
   );
+  const filteredRows = useMemo(
+    () => filterFixturesByRound(visibleRows, roundId),
+    [visibleRows, roundId],
+  );
+
+  function handleRoundChange(value: string) {
+    const nextRoundId = value ? Number.parseInt(value, 10) : null;
+    const parsedRoundId =
+      nextRoundId != null && Number.isFinite(nextRoundId) ? nextRoundId : null;
+    setRoundId(parsedRoundId);
+
+    if (syncRoundToUrl && pathname) {
+      router.replace(buildRoundFilterUrl(pathname, parsedRoundId));
+    }
+  }
+
+  const emptyMessage = (() => {
+    if (roundId != null && selectedRound) {
+      return `No hay partidos en ${selectedRound.name_round}${todayOnly ? " para hoy" : ""}.`;
+    }
+    if (todayOnly) {
+      return "No hay partidos programados para hoy.";
+    }
+    return "No hay partidos en rondas con pronósticos activos.";
+  })();
 
   return (
     <section className="light-surface-panel overflow-hidden rounded-xl border border-outline-variant/60 bg-white shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-outline-variant/50 bg-white p-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <MaterialIcon name="bar_chart" className="text-2xl text-accent" />
-          <div className="flex flex-col gap-0">
-            <h2 className="font-geist text-lg font-semibold text-on-surface">
-              ¿Qué apostó la gente?
-            </h2>
-            <p className="font-geist text-sm text-on-surface-variant">
-              {todayOnly
-                ? "Partidos de hoy · hora de Chile"
-                : "Partidos con pronósticos"}
-            </p>
+      <div className="flex flex-col gap-4 border-b border-outline-variant/50 bg-white p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <MaterialIcon name="bar_chart" className="text-2xl text-accent" />
+            <div className="flex flex-col gap-0">
+              <h2 className="font-geist text-lg font-semibold text-on-surface">
+                ¿Qué apostó la gente?
+              </h2>
+              <p className="font-geist text-sm text-on-surface-variant">
+                {selectedRound
+                  ? `${selectedRound.name_round}${todayOnly ? " · partidos de hoy" : ""}`
+                  : todayOnly
+                    ? "Partidos de hoy · hora de Chile"
+                    : "Partidos con pronósticos"}
+              </p>
+            </div>
           </div>
+          <TodayMatchesToggle checked={todayOnly} onChange={setTodayOnly} />
         </div>
-        <TodayMatchesToggle checked={todayOnly} onChange={setTodayOnly} />
+
+        {rounds && rounds.length > 0 ? (
+          <RoundStageFilter
+            id="estadisticas-round-stage"
+            rounds={rounds}
+            value={roundId?.toString() ?? ""}
+            onChange={handleRoundChange}
+            className="w-full sm:max-w-xs"
+          />
+        ) : null}
       </div>
 
-      {visibleRows.length > 0 ? (
+      {filteredRows.length > 0 ? (
         <ul className="flex flex-col gap-stack-gap p-3 sm:p-4">
-          {visibleRows.map((row) => {
+          {filteredRows.map((row) => {
             const result = resultsByMatch[row.id_match];
             const score =
               result?.goals_home != null && result?.goals_away != null
@@ -146,11 +212,7 @@ export function MatchPredictionStatsList({
           })}
         </ul>
       ) : (
-        <p className="font-geist px-5 py-8 text-sm text-muted-foreground">
-          {todayOnly
-            ? "No hay partidos programados para hoy."
-            : "No hay partidos en rondas con pronósticos activos."}
-        </p>
+        <p className="font-geist px-5 py-8 text-sm text-muted-foreground">{emptyMessage}</p>
       )}
     </section>
   );

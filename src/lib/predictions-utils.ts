@@ -154,10 +154,10 @@ export function fixtureMatchesSearch(fixture: FixtureRow, query: string): boolea
   return tokens.every((token) => haystack.includes(token));
 }
 
-export function filterFixturesByRound(
-  fixtures: FixtureRow[],
+export function filterFixturesByRound<T extends Pick<FixtureRow, "id_round">>(
+  fixtures: T[],
   roundId: number | null,
-): FixtureRow[] {
+): T[] {
   if (roundId == null) return fixtures;
   return fixtures.filter((fixture) => fixture.id_round === roundId);
 }
