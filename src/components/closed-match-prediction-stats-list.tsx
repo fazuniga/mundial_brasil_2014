@@ -156,8 +156,8 @@ export function MatchPredictionStatsList({
 
   return (
     <section className="light-surface-panel overflow-hidden rounded-xl border border-outline-variant/60 bg-white shadow-sm">
-      <div className="flex flex-col gap-4 border-b border-outline-variant/50 bg-white p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-4 border-b border-outline-variant/50 bg-white p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <MaterialIcon name="bar_chart" className="text-2xl text-accent" />
             <div className="flex flex-col gap-0">
@@ -173,18 +173,19 @@ export function MatchPredictionStatsList({
               </p>
             </div>
           </div>
-          <TodayMatchesToggle checked={todayOnly} onChange={setTodayOnly} />
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end sm:gap-4">
+            {rounds && rounds.length > 0 ? (
+              <RoundStageFilter
+                id="estadisticas-round-stage"
+                rounds={rounds}
+                value={roundId?.toString() ?? ""}
+                onChange={handleRoundChange}
+                className="w-full sm:max-w-xs"
+              />
+            ) : null}
+            <TodayMatchesToggle checked={todayOnly} onChange={setTodayOnly} />
+          </div>
         </div>
-
-        {rounds && rounds.length > 0 ? (
-          <RoundStageFilter
-            id="estadisticas-round-stage"
-            rounds={rounds}
-            value={roundId?.toString() ?? ""}
-            onChange={handleRoundChange}
-            className="w-full sm:max-w-xs"
-          />
-        ) : null}
       </div>
 
       {filteredRows.length > 0 ? (
