@@ -13,21 +13,25 @@ import {
 import { buildResultsByMatch, type MatchResultScore } from "@/lib/home-fixtures";
 import { buildGoalsByMatch } from "@/lib/match-goals-display";
 import { FIXTURE_SELECT, FIXTURE_VIEW } from "@/lib/fixture-query";
-import { filterEnabledRoundFixtures } from "@/lib/predictions-utils";
-import type { FixtureRow, PredictionRow } from "@/lib/predictions-types";
-import { ensureUserPool } from "@/lib/predictions-utils";
+import {
+  ensureUserPool,
+  filterEnabledRoundFixtures,
+  parseRoundSearchParam,
+} from "@/lib/predictions-utils";
+import type { FixtureRow, PredictionRow, RoundPhaseRow } from "@/lib/predictions-types";
 
 export const metadata: Metadata = {
   title: "Partidos · Polla Mundial 2026",
 };
 
 type PartidosPageProps = {
-  searchParams: Promise<{ v?: string }>;
+  searchParams: Promise<{ v?: string; ronda?: string }>;
 };
 
 export default async function PartidosPage({ searchParams }: PartidosPageProps) {
-  const { v } = await searchParams;
+  const { v, ronda } = await searchParams;
   const view = v === "grupo" ? "grupo" : "partido";
+  const initialRoundId = parseRoundSearchParam(ronda);
 
   const supabase = await createClient();
   const {
@@ -49,6 +53,7 @@ export default async function PartidosPage({ searchParams }: PartidosPageProps) 
     { data: fixturesRaw, error: fixturesError },
     { data: resultsRaw },
     { data: goalsRaw },
+    { data: roundsRaw },
   ] = await Promise.all([
     supabase
       .from("v_group_standings")
@@ -70,6 +75,7 @@ export default async function PartidosPage({ searchParams }: PartidosPageProps) 
       .select("id_goal, id_match, minute, is_own_goal, players(name, teams(code))")
       .order("id_match")
       .order("minute"),
+    supabase.from("rounds").select("id_round, name_round").order("id_round"),
   ]);
 
   const standings = (standingsRaw ?? []) as GroupStandingRow[];
@@ -82,6 +88,7 @@ export default async function PartidosPage({ searchParams }: PartidosPageProps) 
   );
   const goalsByMatch = buildGoalsByMatch(goalsRaw ?? []);
   const fixtures = filterEnabledRoundFixtures((fixturesRaw ?? []) as FixtureRow[]);
+  const rounds = (roundsRaw ?? []) as Pick<RoundPhaseRow, "id_round" | "name_round">[];
 
   const predictionsByMatch: Record<number, PredictionRow> = {};
   if (user && view === "partido") {
@@ -139,6 +146,9 @@ export default async function PartidosPage({ searchParams }: PartidosPageProps) 
               predictionsByMatch={
                 Object.keys(predictionsByMatch).length > 0 ? predictionsByMatch : undefined
               }
+              rounds={rounds}
+              initialRoundId={initialRoundId}
+              syncRoundToUrl
             />
           ) : null}
         </div>

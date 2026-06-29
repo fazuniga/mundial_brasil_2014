@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { MaterialIcon } from "@/components/material-icon";
 import { PredictionsSearchBar } from "@/components/predictions/predictions-search-bar";
+import { RoundStageFilter } from "@/components/round-stage-filter";
 import { TodayMatchesToggle } from "@/components/today-matches-toggle";
 import { filterFixturesToday } from "@/lib/match-timezone";
 import { FixtureRowCard } from "@/components/fixture-row-card";
@@ -10,15 +12,36 @@ import { isMatchCompleted, type MatchResultScore } from "@/lib/home-fixtures";
 import type { MatchGoalPublicRow } from "@/lib/match-goals-display";
 import { formatScore, firstGoalRangeLabel } from "@/lib/prediction-scoring";
 import { scoringRuleLabel } from "@/lib/scoring-labels";
-import { fixtureMatchesSearch } from "@/lib/predictions-utils";
-import type { FixtureRow, PredictionRow } from "@/lib/predictions-types";
+import {
+  filterFixturesByRound,
+  fixtureMatchesSearch,
+} from "@/lib/predictions-utils";
+import type { FixtureRow, PredictionRow, RoundPhaseRow } from "@/lib/predictions-types";
 
 type MatchResultsListProps = {
   fixtures: FixtureRow[];
   resultsByMatch: Record<number, MatchResultScore>;
   goalsByMatch: Record<number, MatchGoalPublicRow[]>;
   predictionsByMatch?: Record<number, PredictionRow>;
+  rounds?: Pick<RoundPhaseRow, "id_round" | "name_round">[];
+  initialRoundId?: number | null;
+  syncRoundToUrl?: boolean;
+  extraSearchParams?: Record<string, string>;
 };
+
+function buildResultsUrl(
+  path: string,
+  roundId: number | null,
+  extraSearchParams?: Record<string, string>,
+): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(extraSearchParams ?? {})) {
+    if (value) params.set(key, value);
+  }
+  if (roundId != null) params.set("ronda", roundId.toString());
+  const query = params.toString();
+  return query ? `${path}?${query}` : path;
+}
 
 function MyBetFooter({
   goalsHome,
@@ -63,18 +86,65 @@ export function MatchResultsList({
   resultsByMatch,
   goalsByMatch,
   predictionsByMatch,
+  rounds,
+  initialRoundId = null,
+  syncRoundToUrl = false,
+  extraSearchParams,
 }: MatchResultsListProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [todayOnly, setTodayOnly] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [roundId, setRoundId] = useState<number | null>(initialRoundId);
+
+  useEffect(() => {
+    setRoundId(initialRoundId);
+  }, [initialRoundId]);
+
+  const selectedRound = useMemo(
+    () => rounds?.find((round) => round.id_round === roundId) ?? null,
+    [rounds, roundId],
+  );
+
   const visibleFixtures = useMemo(
     () => filterFixturesToday(fixtures, todayOnly),
     [fixtures, todayOnly],
   );
+
+  const roundFilteredFixtures = useMemo(
+    () => filterFixturesByRound(visibleFixtures, roundId),
+    [visibleFixtures, roundId],
+  );
+
   const filteredFixtures = useMemo(() => {
     const q = searchQuery.trim();
-    if (!q) return visibleFixtures;
-    return visibleFixtures.filter((fixture) => fixtureMatchesSearch(fixture, q));
-  }, [visibleFixtures, searchQuery]);
+    if (!q) return roundFilteredFixtures;
+    return roundFilteredFixtures.filter((fixture) => fixtureMatchesSearch(fixture, q));
+  }, [roundFilteredFixtures, searchQuery]);
+
+  function handleRoundChange(value: string) {
+    const nextRoundId = value ? Number.parseInt(value, 10) : null;
+    const parsedRoundId =
+      nextRoundId != null && Number.isFinite(nextRoundId) ? nextRoundId : null;
+    setRoundId(parsedRoundId);
+
+    if (syncRoundToUrl && pathname) {
+      router.replace(buildResultsUrl(pathname, parsedRoundId, extraSearchParams));
+    }
+  }
+
+  const emptyMessage = (() => {
+    if (searchQuery.trim()) {
+      return `Ningún partido coincide con "${searchQuery.trim()}". Prueba con el nombre del equipo, código (ARG), grupo (Grupo A) o fase eliminatoria.`;
+    }
+    if (roundId != null && selectedRound) {
+      return `No hay partidos en ${selectedRound.name_round}${todayOnly ? " para hoy" : ""}.`;
+    }
+    if (todayOnly) {
+      return "No hay partidos programados para hoy.";
+    }
+    return "Aún no hay partidos con resultado cargado.";
+  })();
 
   return (
     <section className="overflow-hidden rounded-xl border border-outline-variant/60 bg-card shadow-sm">
@@ -87,20 +157,35 @@ export function MatchResultsList({
                 Partidos del torneo
               </h2>
               <p className="font-geist text-sm text-on-surface-variant">
-                {todayOnly
-                  ? "Partidos de hoy · hora de Chile"
-                  : "Resultados oficiales cargados · Ordenados por fecha"}
+                {selectedRound
+                  ? `${selectedRound.name_round}${todayOnly ? " · partidos de hoy" : ""}`
+                  : todayOnly
+                    ? "Partidos de hoy · hora de Chile"
+                    : "Resultados oficiales cargados · Ordenados por fecha"}
               </p>
             </div>
           </div>
           <TodayMatchesToggle checked={todayOnly} onChange={setTodayOnly} />
         </div>
 
-        <PredictionsSearchBar
-          value={searchQuery}
-          onChange={setSearchQuery}
-          resultCount={searchQuery.trim() ? filteredFixtures.length : undefined}
-        />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
+          {rounds && rounds.length > 0 ? (
+            <RoundStageFilter
+              rounds={rounds}
+              value={roundId?.toString() ?? ""}
+              onChange={handleRoundChange}
+              className="w-full sm:max-w-xs"
+            />
+          ) : null}
+          <PredictionsSearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            resultCount={
+              searchQuery.trim() || roundId != null ? filteredFixtures.length : undefined
+            }
+            className="min-w-0 flex-1"
+          />
+        </div>
       </div>
 
       {filteredFixtures.length > 0 ? (
@@ -141,13 +226,7 @@ export function MatchResultsList({
           })}
         </ul>
       ) : (
-        <p className="font-geist px-5 py-8 text-sm text-on-surface-variant">
-          {searchQuery.trim()
-            ? `Ningún partido coincide con "${searchQuery.trim()}". Prueba con el nombre del equipo, código (ARG), grupo (Grupo A) o fase eliminatoria.`
-            : todayOnly
-              ? "No hay partidos programados para hoy."
-              : "Aún no hay partidos con resultado cargado."}
-        </p>
+        <p className="font-geist px-5 py-8 text-sm text-on-surface-variant">{emptyMessage}</p>
       )}
     </section>
   );

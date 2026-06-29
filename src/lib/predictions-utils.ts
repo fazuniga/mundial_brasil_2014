@@ -154,6 +154,20 @@ export function fixtureMatchesSearch(fixture: FixtureRow, query: string): boolea
   return tokens.every((token) => haystack.includes(token));
 }
 
+export function filterFixturesByRound(
+  fixtures: FixtureRow[],
+  roundId: number | null,
+): FixtureRow[] {
+  if (roundId == null) return fixtures;
+  return fixtures.filter((fixture) => fixture.id_round === roundId);
+}
+
+export function parseRoundSearchParam(value: string | undefined): number | null {
+  if (!value?.trim()) return null;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 export function filterSectionsBySearch(
   sections: FixtureGroup[],
   query: string,
