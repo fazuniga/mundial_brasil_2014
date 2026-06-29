@@ -168,6 +168,32 @@ export const STOPPAGE_2T_MAX = 909;
 /** Maximum accepted minute for an ET goal entry (ET 2nd half + stoppage). */
 export const ET_MAX_MINUTE = 130;
 
+/** Converts stored goal minute to display text (e.g. 453 → "45+3", 903 → "90+3"). */
+export function formatGoalMinuteDisplay(minute: number): string {
+  if (minute >= STOPPAGE_1T_MIN && minute <= STOPPAGE_1T_MAX) {
+    return `45+${minute - STOPPAGE_1T_MIN + 1}`;
+  }
+  if (minute >= STOPPAGE_2T_MIN && minute <= STOPPAGE_2T_MAX) {
+    return `90+${minute - STOPPAGE_2T_MIN + 1}`;
+  }
+  return String(minute);
+}
+
+/** Chronological sort key for encoded goal minutes (stoppage slots between 45/46 and 90/91). */
+export function goalMinuteSortKey(minute: number): number {
+  if (minute >= STOPPAGE_1T_MIN && minute <= STOPPAGE_1T_MAX) {
+    return 45 + (minute - STOPPAGE_1T_MIN + 1) / 100;
+  }
+  if (minute >= STOPPAGE_2T_MIN && minute <= STOPPAGE_2T_MAX) {
+    return 90 + (minute - STOPPAGE_2T_MIN + 1) / 100;
+  }
+  return minute;
+}
+
+export function compareGoalMinutes(a: number, b: number): number {
+  return goalMinuteSortKey(a) - goalMinuteSortKey(b);
+}
+
 /** True for any minute that belongs to regulation time in the goal encoding. */
 function isRegulationMinute(minute: number): boolean {
   return (
@@ -323,7 +349,7 @@ export function deriveFirstGoalFromGoals(
 ): DerivedFirstGoal | null {
   const eligible = goals
     .filter((g) => !g.is_own_goal)
-    .sort((a, b) => a.minute - b.minute || a.id_goal - b.id_goal);
+    .sort((a, b) => compareGoalMinutes(a.minute, b.minute) || a.id_goal - b.id_goal);
   const first = eligible[0];
   if (!first) return null;
 

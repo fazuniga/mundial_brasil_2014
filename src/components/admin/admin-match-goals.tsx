@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { MatchGoalRow } from "@/lib/admin-types";
 import {
+  compareGoalMinutes,
   type DerivedFirstGoal,
+  formatGoalMinuteDisplay,
   parseGoalMinute,
   playersForMatch,
   STOPPAGE_1T_MIN,
@@ -41,7 +43,8 @@ export function AdminDerivedFirstGoal({
             />
           ) : null}
           <span>
-            {derivedFirstGoal.playerName} · minuto {derivedFirstGoal.minute}
+            {derivedFirstGoal.playerName} · minuto{" "}
+            {formatGoalMinuteDisplay(derivedFirstGoal.minute)}
           </span>
         </p>
       ) : (
@@ -130,7 +133,9 @@ export function AdminMatchGoals({
     if (err) setLocalError(err);
   }
 
-  const sortedGoals = [...goals].sort((a, b) => a.minute - b.minute || a.id_goal - b.id_goal);
+  const sortedGoals = [...goals].sort(
+    (a, b) => compareGoalMinutes(a.minute, b.minute) || a.id_goal - b.id_goal,
+  );
 
   return (
     <div className="space-y-5 border-t border-border/40 pt-5">
@@ -175,7 +180,7 @@ export function AdminMatchGoals({
                 </p>
                 <span className="text-xs sm:text-sm text-on-surface-variant">·</span>
                 <p className="font-geist text-xs sm:text-sm text-on-surface-variant">
-                  Minuto {goal.minute}
+                  Minuto {formatGoalMinuteDisplay(goal.minute)}
                 </p>
               </div>
               <Button
