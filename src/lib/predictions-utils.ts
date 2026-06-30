@@ -31,8 +31,10 @@ export type FixtureGroup = {
 };
 
 /** Group stage is id_round = 1 (Fase de Grupos); knockouts start at id_round = 2. */
+export const GROUP_STAGE_ROUND_ID = 1;
+
 export function isKnockoutFixture(fixture: Pick<FixtureRow, "id_round">): boolean {
-  return fixture.id_round > 1;
+  return fixture.id_round > GROUP_STAGE_ROUND_ID;
 }
 
 /** Public fixture lists: only rounds with predictions_enabled in Fases del torneo. */
@@ -133,6 +135,33 @@ export async function ensureUserPool(
   return created.id_pool;
 }
 
+export type FixtureRoundOption = {
+  id_round: number;
+  name_round: string;
+};
+
+export function uniqueRoundsFromFixtures(
+  fixtures: Pick<FixtureRow, "id_round" | "name_round">[],
+): FixtureRoundOption[] {
+  const byId = new Map<number, string>();
+  for (const fixture of fixtures) {
+    if (!byId.has(fixture.id_round)) {
+      byId.set(fixture.id_round, fixture.name_round);
+    }
+  }
+  return [...byId.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([id_round, name_round]) => ({ id_round, name_round }));
+}
+
+export function filterFixturesByRound<T extends Pick<FixtureRow, "id_round">>(
+  fixtures: T[],
+  roundId: number | null,
+): T[] {
+  if (roundId === null) return fixtures;
+  return fixtures.filter((fixture) => fixture.id_round === roundId);
+}
+
 /** Match fixture against search query (team, code, grupo, round). */
 export function fixtureMatchesSearch(fixture: FixtureRow, query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -152,14 +181,6 @@ export function fixtureMatchesSearch(fixture: FixtureRow, query: string): boolea
     .toLowerCase();
 
   return tokens.every((token) => haystack.includes(token));
-}
-
-export function filterFixturesByRound(
-  fixtures: FixtureRow[],
-  roundId: number | null,
-): FixtureRow[] {
-  if (roundId == null) return fixtures;
-  return fixtures.filter((fixture) => fixture.id_round === roundId);
 }
 
 export function parseRoundSearchParam(value: string | undefined): number | null {

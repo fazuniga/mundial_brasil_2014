@@ -18,7 +18,31 @@ type MatchSideBetsProps = {
 };
 
 const sideBetInputClass =
-  "h-9 rounded-md border border-outline-variant bg-surface-container-lowest font-geist text-sm text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50";
+  "h-9 w-full rounded-md border border-outline-variant bg-surface-container-lowest font-geist text-sm text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50";
+
+const sideBetLabelClass = "font-geist text-xs text-on-surface-variant";
+const sideBetHelperClass = "font-geist text-[10px] leading-snug text-on-surface-variant";
+
+function SideBetLabelBlock({
+  htmlFor,
+  label,
+  helper,
+}: {
+  htmlFor: string;
+  label: string;
+  helper?: string | null;
+}) {
+  return (
+    <div className="flex min-h-10 flex-col justify-end gap-0.5">
+      <Label htmlFor={htmlFor} className={sideBetLabelClass}>
+        {label}
+      </Label>
+      <p className={cn(sideBetHelperClass, !helper && "invisible")} aria-hidden={!helper}>
+        {helper ?? "\u00a0"}
+      </p>
+    </div>
+  );
+}
 
 export function MatchSideBets({
   idMatch,
@@ -29,6 +53,7 @@ export function MatchSideBets({
 }: MatchSideBetsProps) {
   const extraTimeLabel = scoringRuleLabel("extra_time");
   const extraTimeHelper = scoringRuleHelper("extra_time");
+  const firstGoalLabel = scoringRuleLabel("first_goal_minute");
 
   return (
     <div
@@ -39,19 +64,11 @@ export function MatchSideBets({
     >
       {isKnockout && (
         <div className="flex flex-col gap-2">
-          <div>
-            <Label
-              htmlFor={`extra-time-${idMatch}`}
-              className="font-geist text-xs text-on-surface-variant"
-            >
-              {extraTimeLabel}
-            </Label>
-            {extraTimeHelper && (
-              <p className="font-geist text-[10px] text-on-surface-variant">
-                {extraTimeHelper}
-              </p>
-            )}
-          </div>
+          <SideBetLabelBlock
+            htmlFor={`extra-time-${idMatch}`}
+            label={extraTimeLabel}
+            helper={extraTimeHelper}
+          />
           <select
             id={`extra-time-${idMatch}`}
             value={draft.extraTime}
@@ -70,19 +87,17 @@ export function MatchSideBets({
       )}
 
       <div className="flex flex-col gap-2">
-        <Label
+        <SideBetLabelBlock
           htmlFor={`first-goal-minute-${idMatch}`}
-          className="font-geist text-xs text-on-surface-variant"
-        >
-          {scoringRuleLabel("first_goal_minute")}
-        </Label>
+          label={firstGoalLabel}
+        />
         <select
           id={`first-goal-minute-${idMatch}`}
           value={draft.firstGoalMinute}
           onChange={(e) => onDraftChange("firstGoalMinute", e.target.value)}
           disabled={disabled}
           className={cn(sideBetInputClass, "px-2")}
-          aria-label={scoringRuleLabel("first_goal_minute")}
+          aria-label={firstGoalLabel}
         >
           <option value="">Sin pronóstico</option>
           {FIRST_GOAL_RANGES.map(({ key, label }) => (

@@ -1,24 +1,15 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { ensureUserPool } from "@/lib/predictions-utils";
 import { MaterialIcon } from "@/components/material-icon";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SiteHeader } from "@/components/site-header";
 import { PredictionsClient } from "@/components/predictions/predictions-client";
-import { FIXTURE_SELECT, FIXTURE_VIEW } from "@/lib/fixture-query";
-import {
-  ensureUserPool,
-  filterEnabledRoundFixtures,
-  parseRoundSearchParam,
-} from "@/lib/predictions-utils";
-import type { FixtureRow, PlayerRow, PredictionRow, RoundPhaseRow, TeamRow } from "@/lib/predictions-types";
+import type { FixtureRow, PlayerRow, PredictionRow, TeamRow } from "@/lib/predictions-types";
 import type { MatchResultDetail, SideBetOutcome } from "@/lib/prediction-scoring";
 import { formatPredictionLockWindowLabel } from "@/lib/prediction-lock";
 
 export const dynamic = "force-dynamic";
-
-type ApuestasPageProps = {
-  searchParams: Promise<{ ronda?: string }>;
-};
 
 function sortFixtures(fixtures: FixtureRow[]): FixtureRow[] {
   return [...fixtures].sort((a, b) => {
@@ -31,10 +22,7 @@ function sortFixtures(fixtures: FixtureRow[]): FixtureRow[] {
   });
 }
 
-export default async function ApuestasPage({ searchParams }: ApuestasPageProps) {
-  const { ronda } = await searchParams;
-  const initialRoundId = parseRoundSearchParam(ronda);
-
+export default async function ApuestasPage() {
   const supabase = await createClient();
 
   const {
@@ -48,11 +36,12 @@ export default async function ApuestasPage({ searchParams }: ApuestasPageProps) 
     { data: teamsRaw },
     { data: tournamentBetOpenRaw },
     { data: resultsRaw },
-    { data: roundsRaw },
   ] = await Promise.all([
     supabase
-      .from(FIXTURE_VIEW)
-      .select(FIXTURE_SELECT)
+      .from("v_fixture_resolved")
+      .select(
+        "id_match, id_round, name_round, group_code, dow, match_date, match_time, home_code, home_country, away_code, away_country, city, stadium, round_predictions_enabled, predictions_open",
+      )
       .order("match_date")
       .order("match_time"),
     supabase.from("scoring_rules").select("id, rule_key, points").order("scoring_rules_order"),
@@ -74,12 +63,9 @@ export default async function ApuestasPage({ searchParams }: ApuestasPageProps) 
       .select(
         "id_match, goals_home, goals_away, goals_home_et, goals_away_et, pens_home, pens_away, first_goal_minute_range",
       ),
-    supabase.from("rounds").select("id_round, name_round").order("id_round"),
   ]);
 
-  const fixtures = sortFixtures(
-    filterEnabledRoundFixtures((fixturesRaw ?? []) as FixtureRow[]),
-  );
+  const fixtures = sortFixtures((fixturesRaw ?? []) as FixtureRow[]);
   const players = (playersRaw ?? []) as PlayerRow[];
   const teams: TeamRow[] = (teamsRaw ?? []).map((row) => {
     const nested = row.groups as { group_code: string } | { group_code: string }[] | null;
@@ -92,7 +78,6 @@ export default async function ApuestasPage({ searchParams }: ApuestasPageProps) 
     };
   });
   const tournamentBetOpen = tournamentBetOpenRaw?.tournament_bet_open ?? true;
-  const rounds = (roundsRaw ?? []) as Pick<RoundPhaseRow, "id_round" | "name_round">[];
 
   const resultsByMatch: Record<number, MatchResultDetail> = {};
   for (const row of resultsRaw ?? []) {
@@ -198,9 +183,6 @@ export default async function ApuestasPage({ searchParams }: ApuestasPageProps) 
             sideBetsByMatch={sideBetsByMatch}
             players={players}
             teams={teams}
-            rounds={rounds}
-            initialRoundId={initialRoundId}
-            syncRoundToUrl
             tournamentPrediction={tournamentPrediction}
             tournamentBetOpen={tournamentBetOpen}
             poolId={poolId}

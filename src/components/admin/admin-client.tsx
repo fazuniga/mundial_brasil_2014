@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { PredictionsSearchBar } from "@/components/predictions/predictions-search-bar";
+import { FilterField } from "@/components/filter-field";
+import { RoundFilterSelect } from "@/components/round-filter-select";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AdminMatchSection } from "@/components/admin/admin-match-section";
@@ -27,7 +29,7 @@ import {
   parseMatchResultPayload,
   regulationScoreToDraft,
 } from "@/lib/admin-utils";
-import { filterSectionsBySearch } from "@/lib/predictions-utils";
+import { filterSectionsBySearch, filterFixturesByRound, uniqueRoundsFromFixtures } from "@/lib/predictions-utils";
 
 type AdminFixtureViewMode = "group" | "game";
 
@@ -57,6 +59,7 @@ function buildSavedMatches(
 
 export function AdminClient({
   fixtures,
+  rounds,
   resultsByMatch,
   goalsByMatch: initialGoalsByMatch,
   players,
@@ -67,12 +70,27 @@ export function AdminClient({
   const router = useRouter();
   const matchIds = useMemo(() => fixtures.map((f) => f.id_match), [fixtures]);
   const [viewMode, setViewMode] = useState<AdminFixtureViewMode>("game");
+  const [selectedRound, setSelectedRound] = useState<number | null>(null);
+  const roundOptions = useMemo(
+    () =>
+      rounds.length > 0
+        ? rounds.map((round) => ({
+            id_round: round.id_round,
+            name_round: round.name_round,
+          }))
+        : uniqueRoundsFromFixtures(fixtures),
+    [rounds, fixtures],
+  );
+  const visibleFixtures = useMemo(
+    () => filterFixturesByRound(fixtures, selectedRound),
+    [fixtures, selectedRound],
+  );
   const sections = useMemo(() => {
     if (viewMode === "game") {
-      return groupAdminFixturesByGame(fixtures);
+      return groupAdminFixturesByGame(visibleFixtures);
     }
-    return groupFixturesBySection(fixtures);
-  }, [fixtures, viewMode]);
+    return groupFixturesBySection(visibleFixtures);
+  }, [visibleFixtures, viewMode]);
   const [searchQuery, setSearchQuery] = useState("");
   const filteredSections = useMemo(
     () => filterSectionsBySearch(sections, searchQuery),
@@ -285,42 +303,60 @@ export function AdminClient({
         topScorerSummary={topScorerSummary}
       />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex flex-col gap-1.5">
-          <div
-            className="inline-flex w-fit rounded-lg border border-border/60 bg-slate-50 p-1"
-            role="group"
-            aria-label="Organizar partidos"
-          >
-            <Button
-              type="button"
-              size="sm"
-              variant={viewMode === "group" ? "default" : "ghost"}
-              className={viewMode === "group" ? "text-white" : "text-on-surface"}
-              aria-pressed={viewMode === "group"}
-              onClick={() => setViewMode("group")}
-            >
-              Ver por grupo
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={viewMode === "game" ? "default" : "ghost"}
-              className={viewMode === "game" ? "text-white" : "text-on-surface"}
-              aria-pressed={viewMode === "game"}
-              onClick={() => setViewMode("game")}
-            >
-              Ver por partido
-            </Button>
-          </div>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:gap-4">
+          <FilterField label="Organizar">
+            <div className="flex flex-col gap-1.5">
+              <div
+                className="inline-flex h-11 w-fit items-center rounded-lg border border-border/60 bg-slate-50 p-1"
+                role="group"
+                aria-label="Organizar partidos"
+              >
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={viewMode === "group" ? "default" : "ghost"}
+                  className={viewMode === "group" ? "text-white" : "text-on-surface"}
+                  aria-pressed={viewMode === "group"}
+                  onClick={() => setViewMode("group")}
+                >
+                  Ver por grupo
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={viewMode === "game" ? "default" : "ghost"}
+                  className={viewMode === "game" ? "text-white" : "text-on-surface"}
+                  aria-pressed={viewMode === "game"}
+                  onClick={() => setViewMode("game")}
+                >
+                  Ver por partido
+                </Button>
+              </div>
+              <div className="min-h-5" aria-hidden="true" />
+            </div>
+          </FilterField>
+
+          <FilterField label="Fase del torneo">
+            <div className="flex flex-col gap-1.5">
+              <RoundFilterSelect
+                rounds={roundOptions}
+                value={selectedRound}
+                onChange={setSelectedRound}
+                id="admin-round-filter"
+              />
+              <div className="min-h-5" aria-hidden="true" />
+            </div>
+          </FilterField>
         </div>
 
-        <PredictionsSearchBar
-          value={searchQuery}
-          onChange={setSearchQuery}
-          resultCount={searchQuery.trim() ? filteredMatchCount : undefined}
-          className="min-w-0 flex-1 sm:max-w-md"
-        />
+        <FilterField label="Buscar" className="min-w-0 w-full lg:max-w-md">
+          <PredictionsSearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            resultCount={searchQuery.trim() ? filteredMatchCount : undefined}
+          />
+        </FilterField>
       </div>
 
       {searchQuery.trim() && filteredSections.length === 0 ? (

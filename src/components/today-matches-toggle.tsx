@@ -17,7 +17,7 @@ export function TodayMatchesToggle({
   return (
     <label
       className={cn(
-        "flex cursor-pointer items-center gap-2.5 rounded-lg border border-outline-variant/60 bg-surface-container-lowest px-3 py-2",
+        "flex h-11 cursor-pointer items-center gap-2.5 rounded-lg border border-outline-variant/60 bg-surface-container-lowest px-3",
         className,
       )}
     >

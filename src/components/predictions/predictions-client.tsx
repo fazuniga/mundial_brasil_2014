@@ -1,17 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { MaterialIcon } from "@/components/material-icon";
-import { RoundStageFilter } from "@/components/round-stage-filter";
-import { TodayMatchesToggle } from "@/components/today-matches-toggle";
+import { FilterField } from "@/components/filter-field";
+import { RoundFilterSelect } from "@/components/round-filter-select";
 import { filterFixturesToday } from "@/lib/match-timezone";
 import { GroupPredictionsTable } from "@/components/predictions/group-predictions-table";
 import { PredictionsSearchBar } from "@/components/predictions/predictions-search-bar";
 import { ScoringRulesCard } from "@/components/predictions/scoring-rules-card";
 import { SpecialBetsSection } from "@/components/predictions/special-bets-section";
+import { TodayMatchesToggle } from "@/components/today-matches-toggle";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import type {
@@ -21,7 +22,6 @@ import type {
   ScoringRuleRow,
   TeamRow,
   TournamentPredictionRow,
-  RoundPhaseRow,
 } from "@/lib/predictions-types";
 import type { MatchResultDetail, SideBetOutcome } from "@/lib/prediction-scoring";
 import {
@@ -38,6 +38,7 @@ import {
   isPredictionSaved,
   isTopScorerSaved,
   isWinnerSaved,
+  uniqueRoundsFromFixtures,
   parseExtraTimeDraft,
   parseFirstGoalMinuteDraft,
   parseScoreDraft,
@@ -56,20 +57,6 @@ import {
 
 type FixtureViewMode = "group" | "game";
 
-function buildRoundFilterUrl(
-  path: string,
-  roundId: number | null,
-  extraSearchParams?: Record<string, string>,
-): string {
-  const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(extraSearchParams ?? {})) {
-    if (value) params.set(key, value);
-  }
-  if (roundId != null) params.set("ronda", roundId.toString());
-  const query = params.toString();
-  return query ? `${path}?${query}` : path;
-}
-
 type PredictionsClientProps = {
   fixtures: FixtureRow[];
   scoringRules: ScoringRuleRow[];
@@ -78,9 +65,6 @@ type PredictionsClientProps = {
   sideBetsByMatch: Record<number, SideBetOutcome>;
   players: PlayerRow[];
   teams: TeamRow[];
-  rounds?: Pick<RoundPhaseRow, "id_round" | "name_round">[];
-  initialRoundId?: number | null;
-  syncRoundToUrl?: boolean;
   tournamentPrediction: TournamentPredictionRow | null;
   tournamentBetOpen: boolean;
   poolId: number | null;
@@ -129,46 +113,30 @@ export function PredictionsClient({
   sideBetsByMatch,
   players,
   teams,
-  rounds,
-  initialRoundId = null,
-  syncRoundToUrl = false,
   tournamentPrediction,
   tournamentBetOpen,
   poolId,
   isAuthenticated,
 }: PredictionsClientProps) {
   const router = useRouter();
-  const pathname = usePathname();
-  const [todayOnly, setTodayOnly] = useState(true);
+  const [todayOnly, setTodayOnly] = useState(false);
   const [viewMode, setViewMode] = useState<FixtureViewMode>("group");
-  const [roundId, setRoundId] = useState<number | null>(initialRoundId);
-
-  useEffect(() => {
-    setRoundId(initialRoundId);
-  }, [initialRoundId]);
-
-  const selectedRound = useMemo(
-    () => rounds?.find((round) => round.id_round === roundId) ?? null,
-    [rounds, roundId],
-  );
-
-  const visibleFixtures = useMemo(
-    () => filterFixturesToday(fixtures, todayOnly),
-    [fixtures, todayOnly],
-  );
+  const [selectedRound, setSelectedRound] = useState<number | null>(null);
+  const roundOptions = useMemo(() => uniqueRoundsFromFixtures(fixtures), [fixtures]);
   const roundFilteredFixtures = useMemo(
-    () => filterFixturesByRound(visibleFixtures, roundId),
-    [visibleFixtures, roundId],
+    () => filterFixturesByRound(filterFixturesToday(fixtures, todayOnly), selectedRound),
+    [fixtures, todayOnly, selectedRound],
   );
+  const visibleFixtures = roundFilteredFixtures;
   const sections = useMemo(() => {
     if (viewMode === "game") {
-      return groupFixturesByGame(roundFilteredFixtures);
+      return groupFixturesByGame(visibleFixtures);
     }
-    return groupFixturesBySection(roundFilteredFixtures);
-  }, [roundFilteredFixtures, viewMode]);
+    return groupFixturesBySection(visibleFixtures);
+  }, [visibleFixtures, viewMode]);
   const maxEnabledRound = useMemo(
-    () => getMaxEnabledPredictionRound(roundFilteredFixtures),
-    [roundFilteredFixtures],
+    () => getMaxEnabledPredictionRound(visibleFixtures),
+    [visibleFixtures],
   );
   const [searchQuery, setSearchQuery] = useState("");
   const filteredSections = useMemo(
@@ -179,17 +147,6 @@ export function PredictionsClient({
     () => filteredSections.reduce((sum, s) => sum + s.fixtures.length, 0),
     [filteredSections],
   );
-
-  function handleRoundChange(value: string) {
-    const nextRoundId = value ? Number.parseInt(value, 10) : null;
-    const parsedRoundId =
-      nextRoundId != null && Number.isFinite(nextRoundId) ? nextRoundId : null;
-    setRoundId(parsedRoundId);
-
-    if (syncRoundToUrl && pathname) {
-      router.replace(buildRoundFilterUrl(pathname, parsedRoundId));
-    }
-  }
 
   const [drafts, setDrafts] = useState(() =>
     buildInitialDrafts(fixtures, predictionsByMatch),
@@ -560,63 +517,66 @@ export function PredictionsClient({
           />
         )}
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
-            <div className="flex flex-col gap-1.5">
-              <p className="font-geist text-sm font-medium text-on-surface">Organizar</p>
-              <div
-                className="inline-flex w-fit rounded-lg border border-border/60 bg-slate-50 p-1"
-                role="group"
-                aria-label="Organizar partidos"
-              >
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={viewMode === "group" ? "default" : "ghost"}
-                  className={viewMode === "group" ? "text-white" : "text-on-surface"}
-                  aria-pressed={viewMode === "group"}
-                  onClick={() => setViewMode("group")}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:gap-4">
+            <FilterField label="Organizar" labelClassName="text-white">
+              <div className="flex flex-col gap-1.5">
+                <div
+                  className="inline-flex h-11 w-fit items-center rounded-lg border border-border/60 bg-slate-50 p-1"
+                  role="group"
+                  aria-label="Organizar partidos"
                 >
-                  Por grupo
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={viewMode === "game" ? "default" : "ghost"}
-                  className={viewMode === "game" ? "text-white" : "text-on-surface"}
-                  aria-pressed={viewMode === "game"}
-                  onClick={() => setViewMode("game")}
-                >
-                  Por partido
-                </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={viewMode === "group" ? "default" : "ghost"}
+                    className={viewMode === "group" ? "text-white" : "text-on-surface"}
+                    aria-pressed={viewMode === "group"}
+                    onClick={() => setViewMode("group")}
+                  >
+                    Por grupo
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={viewMode === "game" ? "default" : "ghost"}
+                    className={viewMode === "game" ? "text-white" : "text-on-surface"}
+                    aria-pressed={viewMode === "game"}
+                    onClick={() => setViewMode("game")}
+                  >
+                    Por partido
+                  </Button>
+                </div>
               </div>
-            </div>
-            {rounds && rounds.length > 0 ? (
-              <RoundStageFilter
-                id="apuestas-round-stage"
-                rounds={rounds}
-                value={roundId?.toString() ?? ""}
-                onChange={handleRoundChange}
-                className="w-full sm:max-w-xs"
-              />
-            ) : null}
-            <TodayMatchesToggle checked={todayOnly} onChange={setTodayOnly} />
+            </FilterField>
+
+            <FilterField label="Fase del torneo" labelClassName="text-white">
+              <div className="flex flex-col gap-1.5">
+                <RoundFilterSelect
+                  rounds={roundOptions}
+                  value={selectedRound}
+                  onChange={setSelectedRound}
+                />
+              </div>
+            </FilterField>
+
+            <FilterField label="Filtrar" labelClassName="text-white">
+              <div className="flex flex-col gap-1.5">
+                <TodayMatchesToggle checked={todayOnly} onChange={setTodayOnly} />
+              </div>
+            </FilterField>
           </div>
 
-          <PredictionsSearchBar
-            value={searchQuery}
-            onChange={setSearchQuery}
-            resultCount={
-              searchQuery.trim() || roundId != null ? filteredMatchCount : undefined
-            }
-            className="min-w-0 flex-1 sm:max-w-md"
-          />
+          <FilterField label="Buscar" className="min-w-0 w-full lg:max-w-md" labelClassName="text-white">
+            <PredictionsSearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              resultCount={searchQuery.trim() ? filteredMatchCount : undefined}
+            />
+          </FilterField>
         </div>
 
-        {todayOnly &&
-        !searchQuery.trim() &&
-        roundId == null &&
-        filteredSections.length === 0 ? (
+        {todayOnly && !searchQuery.trim() && !selectedRound && filteredSections.length === 0 ? (
           <p className="font-geist text-sm text-on-surface-variant">
             No hay partidos programados para hoy.
           </p>
@@ -625,10 +585,9 @@ export function PredictionsClient({
             Ningún partido coincide con &quot;{searchQuery.trim()}&quot;. Prueba con el
             nombre del equipo, código (ARG), grupo (Grupo A) o fase eliminatoria.
           </p>
-        ) : roundId != null && selectedRound && filteredSections.length === 0 ? (
+        ) : !searchQuery.trim() && selectedRound && filteredSections.length === 0 ? (
           <p className="font-geist text-sm text-on-surface-variant">
-            No hay partidos en {selectedRound.name_round}
-            {todayOnly ? " para hoy" : ""}.
+            No hay partidos en esta fase con los filtros actuales.
           </p>
         ) : (
           filteredSections.map((section) => (
@@ -662,7 +621,7 @@ export function PredictionsClient({
         )}
 
         {isAuthenticated && (
-          <div className="sticky bottom-20 z-10 rounded-lg border border-outline-variant/60 bg-surface-container-lowest p-4 shadow-md md:bottom-4 md:bg-card/95 md:backdrop-blur-sm">
+          <div className="mx-2 sticky bottom-20 z-10 rounded-lg border border-outline-variant/60 bg-surface-container-lowest p-4 shadow-md md:bottom-4 md:bg-card/95 md:backdrop-blur-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="font-geist text-sm text-on-surface-variant">
                 {pendingCount > 0

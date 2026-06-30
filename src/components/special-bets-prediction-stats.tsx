@@ -208,7 +208,7 @@ export function SpecialBetsPredictionStats({
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex w-full flex-wrap items-start justify-between gap-3 border-b border-outline-variant/50 bg-white p-4 text-left transition-colors hover:bg-surface-container-low/30"
+        className="flex w-full flex-wrap items-center justify-between gap-3 bg-white p-4 text-left transition-colors hover:bg-surface-container-low/30"
         aria-expanded={open}
         aria-label={
           open

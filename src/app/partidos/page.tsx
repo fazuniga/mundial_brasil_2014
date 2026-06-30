@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { GroupStandingsSections } from "@/components/group-standings-sections";
-import { MatchResultsList } from "@/components/match-results-list";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
-import { ResultsViewSwitcher } from "@/components/results-view-switcher";
+import { PartidosClient } from "@/components/partidos-client";
+import type { PartidosView } from "@/components/partidos-view-select";
 import { SiteHeader } from "@/components/site-header";
 import {
   GROUP_CODES,
@@ -12,26 +11,20 @@ import {
 } from "@/lib/group-standings";
 import { buildResultsByMatch, type MatchResultScore } from "@/lib/home-fixtures";
 import { buildGoalsByMatch } from "@/lib/match-goals-display";
-import { FIXTURE_SELECT, FIXTURE_VIEW } from "@/lib/fixture-query";
-import {
-  ensureUserPool,
-  filterEnabledRoundFixtures,
-  parseRoundSearchParam,
-} from "@/lib/predictions-utils";
-import type { FixtureRow, PredictionRow, RoundPhaseRow } from "@/lib/predictions-types";
+import type { FixtureRow, PredictionRow } from "@/lib/predictions-types";
+import { ensureUserPool } from "@/lib/predictions-utils";
 
 export const metadata: Metadata = {
   title: "Partidos · Polla Mundial 2026",
 };
 
 type PartidosPageProps = {
-  searchParams: Promise<{ v?: string; ronda?: string }>;
+  searchParams: Promise<{ v?: string }>;
 };
 
 export default async function PartidosPage({ searchParams }: PartidosPageProps) {
-  const { v, ronda } = await searchParams;
-  const view = v === "grupo" ? "grupo" : "partido";
-  const initialRoundId = parseRoundSearchParam(ronda);
+  const { v } = await searchParams;
+  const initialView: PartidosView = v === "grupo" ? "posiciones" : "partidos";
 
   const supabase = await createClient();
   const {
@@ -53,7 +46,6 @@ export default async function PartidosPage({ searchParams }: PartidosPageProps) 
     { data: fixturesRaw, error: fixturesError },
     { data: resultsRaw },
     { data: goalsRaw },
-    { data: roundsRaw },
   ] = await Promise.all([
     supabase
       .from("v_group_standings")
@@ -65,8 +57,10 @@ export default async function PartidosPage({ searchParams }: PartidosPageProps) 
       .order("goal_diff", { ascending: false })
       .order("goals_for", { ascending: false }),
     supabase
-      .from(FIXTURE_VIEW)
-      .select(FIXTURE_SELECT)
+      .from("v_fixture_resolved")
+      .select(
+        "id_match, id_round, name_round, group_code, dow, match_date, match_time, home_code, home_country, away_code, away_country, city, stadium, round_predictions_enabled, predictions_open",
+      )
       .order("match_date")
       .order("match_time"),
     supabase.from("match_results").select("id_match, goals_home, goals_away"),
@@ -75,7 +69,6 @@ export default async function PartidosPage({ searchParams }: PartidosPageProps) 
       .select("id_goal, id_match, minute, is_own_goal, players(name, teams(code))")
       .order("id_match")
       .order("minute"),
-    supabase.from("rounds").select("id_round, name_round").order("id_round"),
   ]);
 
   const standings = (standingsRaw ?? []) as GroupStandingRow[];
@@ -87,11 +80,10 @@ export default async function PartidosPage({ searchParams }: PartidosPageProps) 
     (resultsRaw ?? []) as MatchResultScore[],
   );
   const goalsByMatch = buildGoalsByMatch(goalsRaw ?? []);
-  const fixtures = filterEnabledRoundFixtures((fixturesRaw ?? []) as FixtureRow[]);
-  const rounds = (roundsRaw ?? []) as Pick<RoundPhaseRow, "id_round" | "name_round">[];
+  const fixtures = (fixturesRaw ?? []) as FixtureRow[];
 
   const predictionsByMatch: Record<number, PredictionRow> = {};
-  if (user && view === "partido") {
+  if (user) {
     const poolId = await ensureUserPool(supabase, user.id);
     const { data: predictions } = await supabase
       .from("predictions")
@@ -103,7 +95,7 @@ export default async function PartidosPage({ searchParams }: PartidosPageProps) 
     }
   }
 
-  const error = view === "grupo" ? standingsError : fixturesError;
+  const error = standingsError ?? fixturesError;
 
   return (
     <>
@@ -111,47 +103,32 @@ export default async function PartidosPage({ searchParams }: PartidosPageProps) 
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-section-gap px-gutter-md py-24 md:pb-8">
         <header className="space-y-2">
           <p className="font-geist text-xs font-semibold uppercase tracking-widest text-accent">
-            Fase de Grupos
+            Torneo
           </p>
           <h1 className="font-headline text-2xl font-bold text-primary md:text-3xl">
             Partidos
           </h1>
           <p className="font-geist max-w-2xl text-sm text-on-surface-variant">
-            {view === "grupo"
-              ? "Posiciones por grupo según resultados oficiales del torneo. Los dos primeros de cada grupo avanzan a Dieciseisavos de Final."
-              : "Resultados oficiales del torneo por partido, ordenados por fecha."}
+            Resultados oficiales por partido y posiciones de la Fase de Grupos.
           </p>
         </header>
 
-        <ResultsViewSwitcher view={view} />
-
-        <div className="light-surface-panel flex flex-col gap-4">
-          {error ? (
-            <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 font-geist text-sm text-destructive">
-              {view === "grupo"
-                ? "No se pudieron cargar las posiciones. Vuelve a intentar más tarde."
-                : "No se pudieron cargar los partidos. Vuelve a intentar más tarde."}
-            </div>
-          ) : null}
-
-          {!error && view === "grupo" ? (
-            <GroupStandingsSections grouped={grouped} />
-          ) : null}
-
-          {!error && view === "partido" ? (
-            <MatchResultsList
-              fixtures={fixtures}
-              resultsByMatch={resultsByMatch}
-              goalsByMatch={goalsByMatch}
-              predictionsByMatch={
-                Object.keys(predictionsByMatch).length > 0 ? predictionsByMatch : undefined
-              }
-              rounds={rounds}
-              initialRoundId={initialRoundId}
-              syncRoundToUrl
-            />
-          ) : null}
-        </div>
+        {error ? (
+          <div className="light-surface-panel rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 font-geist text-sm text-destructive">
+            No se pudieron cargar los datos del torneo. Vuelve a intentar más tarde.
+          </div>
+        ) : (
+          <PartidosClient
+            grouped={grouped}
+            fixtures={fixtures}
+            resultsByMatch={resultsByMatch}
+            goalsByMatch={goalsByMatch}
+            predictionsByMatch={
+              Object.keys(predictionsByMatch).length > 0 ? predictionsByMatch : undefined
+            }
+            initialView={initialView}
+          />
+        )}
       </main>
       <MobileBottomNav active="partidos" isAdmin={isAdmin} />
     </>

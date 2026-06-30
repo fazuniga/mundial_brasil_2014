@@ -57,6 +57,7 @@ Predictions UI and pool management are schema-ready (`predictions`, `pools`); no
 npm run dev
 npm run build
 node scripts/generate-seed.mjs
+node scripts/generate-third-place-matrix.mjs
 ```
 
 Supabase project: `rmhvjlizczjdnxoldhuc` (see README Setup).

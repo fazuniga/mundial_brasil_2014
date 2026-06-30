@@ -8,6 +8,7 @@ import {
 import { MaterialIcon } from "@/components/material-icon";
 import { MatchPredictionCard } from "@/components/predictions/match-prediction-card";
 import {
+  KnockoutScoreHint,
   MatchStatusBadges,
   TeamCell,
   desktopScoreInputClass,
@@ -75,6 +76,8 @@ export function GroupPredictionsTable({
   }
 
   const roundClosed = isFixtureSectionRoundClosed(fixtures);
+  const isKnockoutSection =
+    fixtures.length > 0 && isKnockoutFixture(fixtures[0]);
   const { name, total, saved } = getPredictionSectionTitleMeta(
     title,
     fixtures,
@@ -99,6 +102,10 @@ export function GroupPredictionsTable({
         <p className="border-b border-outline-variant/40 bg-surface-container-low px-3 py-2.5 font-geist text-sm text-on-surface-variant">
           Esta fase aún no está abierta para pronósticos
         </p>
+      ) : isKnockoutSection ? (
+        <div className="border-b border-outline-variant/40 bg-surface-container-low/60 px-3 py-2">
+          <KnockoutScoreHint className="md:justify-start" />
+        </div>
       ) : null}
       <div className="flex flex-col gap-3 p-3 md:hidden">
         {fixtures.map((fixture) => {

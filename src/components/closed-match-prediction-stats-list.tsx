@@ -2,8 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { MaterialIcon } from "@/components/material-icon";
-import { TodayMatchesToggle } from "@/components/today-matches-toggle";
+import { FilterField } from "@/components/filter-field";
 import { FixtureRowCard } from "@/components/fixture-row-card";
+import { PredictionsSearchBar } from "@/components/predictions/predictions-search-bar";
+import { RoundFilterSelect } from "@/components/round-filter-select";
+import { TodayMatchesToggle } from "@/components/today-matches-toggle";
 import {
   formatPredictionStatPercent,
   type MatchPredictionStatsRow,
@@ -11,7 +14,12 @@ import {
 import type { MatchResultScore } from "@/lib/home-fixtures";
 import type { MatchGoalPublicRow } from "@/lib/match-goals-display";
 import { filterFixturesToday } from "@/lib/match-timezone";
-import { getFixturePredictionLock } from "@/lib/predictions-utils";
+import {
+  filterFixturesByRound,
+  fixtureMatchesSearch,
+  getFixturePredictionLock,
+  uniqueRoundsFromFixtures,
+} from "@/lib/predictions-utils";
 import { formatPredictionLockWindowShort } from "@/lib/prediction-lock";
 import { cn } from "@/lib/utils";
 
@@ -97,28 +105,64 @@ export function MatchPredictionStatsList({
   goalsByMatch,
 }: MatchPredictionStatsListProps) {
   const [todayOnly, setTodayOnly] = useState(true);
-  const visibleRows = useMemo(
-    () => filterFixturesToday(rows, todayOnly),
-    [rows, todayOnly],
-  );
+  const [selectedRound, setSelectedRound] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const roundOptions = useMemo(() => uniqueRoundsFromFixtures(rows), [rows]);
+  const visibleRows = useMemo(() => {
+    const filtered = filterFixturesByRound(
+      filterFixturesToday(rows, todayOnly),
+      selectedRound,
+    );
+    const query = searchQuery.trim();
+    if (!query) return filtered;
+    return filtered.filter((row) => fixtureMatchesSearch(row, query));
+  }, [rows, todayOnly, selectedRound, searchQuery]);
+
+  const panelSubtitle = todayOnly
+    ? "Partidos de hoy · hora de Chile"
+    : selectedRound
+      ? `${roundOptions.find((round) => round.id_round === selectedRound)?.name_round ?? "Fase seleccionada"} · pronósticos agregados`
+      : "Partidos con pronósticos agregados";
 
   return (
     <section className="light-surface-panel overflow-hidden rounded-xl border border-outline-variant/60 bg-white shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-outline-variant/50 bg-white p-4">
-        <div className="flex min-w-0 items-center gap-3">
+      <div className="border-b border-outline-variant/50 bg-surface-container-lowest p-4">
+        <div className="flex flex-wrap items-center gap-3">
           <MaterialIcon name="bar_chart" className="text-2xl text-accent" />
-          <div className="flex flex-col gap-0">
+          <div className="flex min-w-0 flex-1 flex-col justify-center gap-0">
             <h2 className="font-geist text-lg font-semibold text-on-surface">
               ¿Qué apostó la gente?
             </h2>
-            <p className="font-geist text-sm text-on-surface-variant">
-              {todayOnly
-                ? "Partidos de hoy · hora de Chile"
-                : "Partidos con pronósticos"}
-            </p>
+            <p className="font-geist text-sm text-on-surface-variant">{panelSubtitle}</p>
           </div>
         </div>
-        <TodayMatchesToggle checked={todayOnly} onChange={setTodayOnly} />
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_auto_minmax(16rem,20rem)] lg:items-start">
+          <FilterField label="Fase del torneo" className="min-w-0 w-full">
+            <RoundFilterSelect
+              rounds={roundOptions}
+              value={selectedRound}
+              onChange={setSelectedRound}
+              id="estadisticas-round-filter"
+            />
+          </FilterField>
+
+          <FilterField label="Filtrar" className="min-w-0 w-full lg:w-auto">
+            <TodayMatchesToggle checked={todayOnly} onChange={setTodayOnly} />
+          </FilterField>
+
+          <FilterField
+            label="Buscar"
+            className="min-w-0 w-full sm:col-span-2 lg:col-span-1"
+          >
+            <PredictionsSearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              resultCount={searchQuery.trim() ? visibleRows.length : undefined}
+            />
+          </FilterField>
+        </div>
       </div>
 
       {visibleRows.length > 0 ? (
@@ -146,10 +190,14 @@ export function MatchPredictionStatsList({
           })}
         </ul>
       ) : (
-        <p className="font-geist px-5 py-8 text-sm text-muted-foreground">
-          {todayOnly
-            ? "No hay partidos programados para hoy."
-            : "No hay partidos en rondas con pronósticos activos."}
+        <p className="font-geist px-5 py-8 text-sm text-on-surface-variant">
+          {searchQuery.trim()
+            ? `Ningún partido coincide con "${searchQuery.trim()}".`
+            : todayOnly
+              ? "No hay partidos programados para hoy."
+              : selectedRound
+                ? "No hay partidos en esta fase."
+                : "No hay partidos en rondas con pronósticos activos."}
         </p>
       )}
     </section>

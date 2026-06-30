@@ -81,8 +81,14 @@ export type SpecialBetsSettings = {
   special_bets_open_override: boolean | null;
 };
 
+export type AdminRoundOption = {
+  id_round: number;
+  name_round: string;
+};
+
 export type AdminClientProps = {
   fixtures: AdminFixtureRow[];
+  rounds: AdminRoundOption[];
   resultsByMatch: Record<number, MatchResultRow>;
   goalsByMatch: Record<number, MatchGoalRow[]>;
   players: PlayerRow[];

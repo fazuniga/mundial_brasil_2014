@@ -1,6 +1,7 @@
 "use client";
 
 import { MaterialIcon } from "@/components/material-icon";
+import { knockoutScorePredictionHint } from "@/lib/scoring-labels";
 import { teamFlagUrl, teamInitials } from "@/lib/team-display";
 import type {
   FixturePredictionLock,
@@ -13,6 +14,24 @@ export const desktopScoreInputClass =
 
 export const mobileScoreInputClass =
   "h-11 min-h-[44px] w-14 min-w-[44px] rounded-lg border border-outline-variant bg-surface-container-lowest text-center font-headline text-2xl font-bold text-on-surface tabular-nums transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50";
+
+export function KnockoutScoreHint({ className }: { className?: string }) {
+  return (
+    <p
+      className={cn(
+        "flex items-start justify-center gap-1.5 font-geist text-[11px] leading-snug text-on-surface-variant",
+        className,
+      )}
+    >
+      <MaterialIcon
+        name="info"
+        className="mt-px shrink-0 text-sm text-primary"
+        aria-hidden
+      />
+      <span>{knockoutScorePredictionHint()}</span>
+    </p>
+  );
+}
 
 export function sideBetCount(draft: PredictionDraft, isKnockout: boolean): number {
   let count = 0;

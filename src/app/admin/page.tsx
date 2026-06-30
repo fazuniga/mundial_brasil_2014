@@ -194,6 +194,10 @@ export default async function AdminPage() {
 
         <AdminClient
           fixtures={fixtures}
+          rounds={(roundsRaw ?? []).map((round) => ({
+            id_round: round.id_round,
+            name_round: round.name_round,
+          }))}
           resultsByMatch={resultsByMatch}
           goalsByMatch={goalsByMatch}
           players={players}

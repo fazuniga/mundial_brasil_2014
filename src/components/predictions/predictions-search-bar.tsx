@@ -19,6 +19,13 @@ export function PredictionsSearchBar({
 }: PredictionsSearchBarProps) {
   const hasQuery = value.trim().length > 0;
 
+  const resultLabel =
+    hasQuery && resultCount != null
+      ? resultCount === 0
+        ? "Ningún partido coincide con la búsqueda"
+        : `${resultCount} partido${resultCount === 1 ? "" : "s"} encontrado${resultCount === 1 ? "" : "s"}`
+      : "\u00a0";
+
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
       <div className="relative">
@@ -47,13 +54,15 @@ export function PredictionsSearchBar({
           </button>
         )}
       </div>
-      {hasQuery && resultCount != null && (
-        <p className="font-geist text-xs text-white">
-          {resultCount === 0
-            ? "Ningún partido coincide con la búsqueda"
-            : `${resultCount} partido${resultCount === 1 ? "" : "s"} encontrado${resultCount === 1 ? "" : "s"}`}
-        </p>
-      )}
+      <p
+        className={cn(
+          "min-h-5 font-geist text-xs leading-5",
+          hasQuery && resultCount != null ? "text-on-surface-variant" : "invisible",
+        )}
+        aria-live="polite"
+      >
+        {resultLabel}
+      </p>
     </div>
   );
 }

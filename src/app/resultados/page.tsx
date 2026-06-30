@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { MatchResultsList } from "@/components/match-results-list";
+import { ResultadosClient } from "@/components/resultados-client";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SiteHeader } from "@/components/site-header";
 import { buildResultsByMatch, type MatchResultScore } from "@/lib/home-fixtures";
@@ -101,7 +101,7 @@ export default async function ResultadosPage({ searchParams }: ResultadosPagePro
               No se pudieron cargar los resultados. Vuelve a intentar más tarde.
             </div>
           ) : (
-            <MatchResultsList
+            <ResultadosClient
               fixtures={fixtures}
               resultsByMatch={resultsByMatch}
               goalsByMatch={goalsByMatch}

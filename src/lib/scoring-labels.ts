@@ -30,3 +30,8 @@ export function scoringRuleLabel(ruleKey: string): string {
 export function scoringRuleHelper(ruleKey: string): string | null {
   return RULE_HELPERS[ruleKey] ?? null;
 }
+
+/** Knockout main-score prediction (admin: goles prórroga total; penales aparte). */
+export function knockoutScorePredictionHint(): string {
+  return "El marcador pronosticado incluye prórroga; los penales no cuentan.";
+}
