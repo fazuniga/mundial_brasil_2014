@@ -51,7 +51,9 @@ export default async function ResultadosPage({ searchParams }: ResultadosPagePro
       .select(FIXTURE_SELECT)
       .order("match_date")
       .order("match_time"),
-    supabase.from("match_results").select("id_match, goals_home, goals_away"),
+    supabase
+      .from("match_results")
+      .select("id_match, goals_home, goals_away, goals_home_et, goals_away_et, pens_home, pens_away"),
     supabase
       .from("match_goals")
       .select("id_goal, id_match, minute, is_own_goal, players(name, teams(code))")
@@ -81,7 +83,7 @@ export default async function ResultadosPage({ searchParams }: ResultadosPagePro
   return (
     <>
       <SiteHeader userEmail={user?.email} isAdmin={isAdmin} activeNav="partidos" />
-      <main className="mx-auto flex w-full max-w-5xl flex-col gap-section-gap px-gutter-md py-24 md:pb-8">
+      <main id="main-content" className="mx-auto flex w-full max-w-5xl flex-col gap-section-gap px-gutter-md py-24 md:pb-8">
         <header className="space-y-2">
           <p className="font-geist text-xs font-semibold uppercase tracking-widest text-accent">
             Polla Mundial 2026

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { MaterialIcon } from "@/components/material-icon";
 import { cn } from "@/lib/utils";
 
@@ -44,31 +45,13 @@ export function GroupStandingsLeaderboard({ rows }: GroupStandingsLeaderboardPro
 
   return (
     <div className="overflow-hidden rounded-xl border border-outline-variant/60 bg-card shadow-sm">
-      <div className="flex items-center justify-between border-b border-outline-variant/50 bg-surface-container-lowest p-6">
-        <div>
-          <h3 className="font-geist text-lg font-semibold text-on-surface">
-            Clasificación global
-          </h3>
-          <p className="font-geist mt-1 text-sm text-on-surface-variant">
-            Clasificación actual según los puntos de la fase de grupos.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            aria-label="Filtrar clasificación"
-            className="flex items-center justify-center rounded-md border border-outline-variant p-2 text-on-surface transition-colors hover:bg-surface-variant"
-          >
-            <MaterialIcon name="filter_list" className="text-[20px]" />
-          </button>
-          <button
-            type="button"
-            aria-label="Más opciones"
-            className="flex items-center justify-center rounded-md border border-outline-variant p-2 text-on-surface transition-colors hover:bg-surface-variant"
-          >
-            <MaterialIcon name="more_vert" className="text-[20px]" />
-          </button>
-        </div>
+      <div className="border-b border-outline-variant/50 bg-surface-container-lowest p-6">
+        <h3 className="font-geist text-lg font-semibold text-on-surface">
+          Clasificación global
+        </h3>
+        <p className="font-geist mt-1 text-sm text-on-surface-variant">
+          Clasificación actual según los puntos de la fase de grupos.
+        </p>
       </div>
 
       {sorted.length > 0 ? (
@@ -137,13 +120,13 @@ export function GroupStandingsLeaderboard({ rows }: GroupStandingsLeaderboardPro
             </table>
           </div>
           <div className="border-t border-outline-variant/50 bg-surface-container-lowest p-4 text-center">
-            <button
-              type="button"
-              className="font-geist mx-auto flex items-center justify-center gap-1 text-xs font-semibold text-primary hover:underline"
+            <Link
+              href="/partidos?v=grupo"
+              className="font-geist mx-auto inline-flex items-center justify-center gap-1 text-xs font-semibold text-primary hover:underline"
             >
               Ver clasificación completa
               <MaterialIcon name="chevron_right" className="text-[16px]" />
-            </button>
+            </Link>
           </div>
         </>
       ) : (

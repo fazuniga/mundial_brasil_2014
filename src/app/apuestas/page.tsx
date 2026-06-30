@@ -140,7 +140,7 @@ export default async function ApuestasPage() {
   return (
     <>
       <SiteHeader userEmail={user?.email} isAdmin={isAdmin} activeNav="apuestas" />
-      <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-24 md:pb-8">
+      <main id="main-content" className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-24 md:pb-8">
         <header className="space-y-2">
           <p className="font-geist text-xs font-semibold uppercase tracking-widest text-accent">
             Apuestas

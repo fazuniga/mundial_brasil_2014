@@ -27,7 +27,7 @@ export function HomeHero({ isAuthenticated }: HomeHeroProps) {
         </p>
         <h2
           id="home-hero-heading"
-          className="font-headline mb-4 text-2xl font-bold text-white md:text-3xl"
+          className="font-headline mb-4 text-2xl font-bold text-white text-balance md:text-3xl"
         >
           Bienvenido al pronosticador definitivo
         </h2>
@@ -37,7 +37,7 @@ export function HomeHero({ isAuthenticated }: HomeHeroProps) {
         </p>
         <Link
           href={ctaHref}
-          className="font-geist flex w-max items-center gap-2 rounded-lg bg-primary-fixed px-6 py-3 text-xs font-medium text-on-primary-fixed shadow-md transition-colors duration-150 hover:bg-primary-fixed-dim active:scale-95"
+          className="font-geist flex w-max items-center gap-2 rounded-lg bg-primary-fixed px-6 py-3 text-xs font-medium text-on-primary-fixed shadow-md transition-colors duration-150 hover:bg-primary-fixed-dim motion-safe:active:scale-95"
         >
           <MaterialIcon name="play_arrow" className="text-[18px]" />
           Empezar a pronosticar

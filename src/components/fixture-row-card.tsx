@@ -33,6 +33,8 @@ function TeamBadge({
           <img
             src={flagUrl}
             alt=""
+            width={80}
+            height={80}
             className="h-full w-full object-cover"
           />
         ) : (
@@ -127,7 +129,12 @@ function FixtureMeta({
 
 type FixtureRowCardProps = {
   fixture: FixtureRow;
-  score?: { home: number; away: number };
+  score?: {
+    home: number;
+    away: number;
+    pensHome?: number;
+    pensAway?: number;
+  };
   goals?: MatchGoalPublicRow[];
   showPredictLink: boolean;
   showVenue?: boolean;
@@ -182,7 +189,7 @@ export function FixtureRowCard({
                 code={fixture.home_code}
                 align="right"
               />
-              <div className="flex w-14 shrink-0 flex-col items-center px-1 sm:w-16">
+              <div className="flex w-14 shrink-0 flex-col items-center justify-center px-1 sm:w-16">
                 {score ? (
                   <p className="font-headline text-xl font-bold tabular-nums text-primary">
                     {score.home}
@@ -201,6 +208,14 @@ export function FixtureRowCard({
                 align="left"
               />
             </div>
+
+            {score?.pensHome != null && score?.pensAway != null ? (
+              <p className="text-center font-geist text-xs text-on-surface-variant">
+                <span className="whitespace-nowrap tabular-nums">
+                  Penales {score.pensHome}–{score.pensAway}
+                </span>
+              </p>
+            ) : null}
 
             {goals && goals.length > 0 ? (
               <MatchGoalsDetail

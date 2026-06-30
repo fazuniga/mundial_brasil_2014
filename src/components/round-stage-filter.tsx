@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import type { RoundPhaseRow } from "@/lib/predictions-types";
 
 const selectClass =
-  "h-9 w-full rounded-md border border-outline-variant bg-white px-3 font-geist text-sm text-black focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20";
+  "h-9 w-full rounded-md border border-outline-variant bg-white px-3 font-geist text-sm text-black focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20";
 
 type RoundStageFilterProps = {
   rounds: Pick<RoundPhaseRow, "id_round" | "name_round">[];

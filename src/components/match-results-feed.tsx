@@ -3,7 +3,7 @@
 import { FixtureRowCard } from "@/components/fixture-row-card";
 import { isMatchCompleted, type MatchResultScore } from "@/lib/home-fixtures";
 import type { MatchGoalPublicRow } from "@/lib/match-goals-display";
-import { formatScore, firstGoalRangeLabel } from "@/lib/prediction-scoring";
+import { formatScore, firstGoalRangeLabel, hasPenaltyShootout } from "@/lib/prediction-scoring";
 import { scoringRuleLabel } from "@/lib/scoring-labels";
 import type { FixtureRow, PredictionRow } from "@/lib/predictions-types";
 
@@ -71,7 +71,16 @@ export function MatchResultsFeed({
           const result = resultsByMatch[fixture.id_match];
           const score =
             result?.goals_home != null && result?.goals_away != null
-              ? { home: result.goals_home, away: result.goals_away }
+              ? {
+                  home: result.goals_home,
+                  away: result.goals_away,
+                  ...(hasPenaltyShootout(result)
+                    ? {
+                        pensHome: result.pens_home!,
+                        pensAway: result.pens_away!,
+                      }
+                    : {}),
+                }
               : undefined;
 
           const goals = goalsByMatch[fixture.id_match] ?? [];

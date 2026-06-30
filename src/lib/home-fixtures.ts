@@ -4,6 +4,10 @@ export type MatchResultScore = {
   id_match: number;
   goals_home: number | null;
   goals_away: number | null;
+  goals_home_et?: number | null;
+  goals_away_et?: number | null;
+  pens_home?: number | null;
+  pens_away?: number | null;
 };
 
 export const HOME_UPCOMING_LIMIT = 5;

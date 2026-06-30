@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 export const filterSelectClass = cn(
   "h-11 w-full min-w-0 appearance-none rounded-lg border border-outline-variant bg-surface-container-lowest pl-3 pr-10 font-geist text-sm text-on-surface",
-  "focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
+  "focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20",
   "disabled:cursor-not-allowed disabled:opacity-50",
 );
 

@@ -9,7 +9,7 @@ type SiteHeaderProps = {
 };
 
 const navLinkClass =
-  "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-150 active:scale-95";
+  "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-150 motion-safe:active:scale-95";
 
 export function SiteHeader({
   userEmail,
@@ -21,9 +21,9 @@ export function SiteHeader({
       <div className="mx-auto flex h-header-height w-full max-w-7xl items-center justify-between px-gutter-md">
         <Link href="/partidos" className="flex items-center gap-3 transition-opacity hover:opacity-80">
           <MaterialIcon name="sports_soccer" className="text-3xl text-primary" />
-          <h1 className="font-headline text-lg font-bold text-primary md:text-xl">
+          <span className="font-headline text-lg font-bold text-primary md:text-xl">
             Mundial 2026
-          </h1>
+          </span>
         </Link>
 
         <nav className="hidden items-center gap-2 md:flex">
@@ -131,7 +131,7 @@ export function SiteHeader({
           ) : (
             <Link
               href="/login"
-              className="flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground shadow-sm transition-colors duration-150 hover:bg-primary-container active:scale-95"
+              className="flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground shadow-sm transition-colors duration-150 hover:bg-primary-container motion-safe:active:scale-95"
             >
               Iniciar sesión
             </Link>

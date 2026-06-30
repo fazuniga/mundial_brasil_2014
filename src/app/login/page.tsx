@@ -5,13 +5,16 @@ import { MaterialIcon } from "@/components/material-icon";
 import { Alert } from "@/components/ui/alert";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
+
+const inputClassName =
+  "h-10 rounded border border-outline-variant bg-surface-container-lowest px-3 text-sm text-on-surface transition-[border-color,box-shadow] placeholder:text-on-surface-variant/60 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20";
 
 export default function LoginPage() {
   const router = useRouter();
+  const emailRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -27,6 +30,7 @@ export default function LoginPage() {
     setLoading(false);
     if (signInError) {
       setError(signInError.message);
+      emailRef.current?.focus();
       return;
     }
     router.push("/");
@@ -34,7 +38,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-grow items-center justify-center p-gutter-md">
+    <main id="main-content" className="flex min-h-screen flex-grow items-center justify-center p-gutter-md">
       <div className="mx-auto flex w-full max-w-7xl justify-center">
         <div className="w-full max-w-md">
         <div className="overflow-hidden rounded-xl border border-outline-variant/60 bg-card shadow-md">
@@ -43,7 +47,7 @@ export default function LoginPage() {
               <p className="font-geist text-xs font-semibold uppercase tracking-widest text-accent">
                 Polla Mundial 2026
               </p>
-              <h1 className="font-headline flex items-center justify-center gap-2 text-3xl font-bold text-primary">
+              <h1 className="font-headline flex items-center justify-center gap-2 text-3xl font-bold text-primary text-balance">
                 <MaterialIcon name="sports_soccer" filled className="text-3xl" />
                 Iniciar sesión
               </h1>
@@ -61,27 +65,27 @@ export default function LoginPage() {
                   Correo electrónico
                 </label>
                 <input
+                  ref={emailRef}
                   id="email"
                   name="email"
                   type="email"
                   required
                   autoComplete="email"
-                  placeholder="nombre@ejemplo.com"
+                  spellCheck={false}
+                  placeholder="nombre@ejemplo.com…"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-10 rounded border border-outline-variant bg-surface-container-lowest px-3 text-sm text-on-surface transition-all placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className={inputClassName}
                 />
               </div>
 
               <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <label
-                    htmlFor="password"
-                    className="font-geist text-xs font-medium text-on-surface"
-                  >
-                    Contraseña
-                  </label>
-                </div>
+                <label
+                  htmlFor="password"
+                  className="font-geist text-xs font-medium text-on-surface"
+                >
+                  Contraseña
+                </label>
                 <input
                   id="password"
                   name="password"
@@ -91,25 +95,8 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="h-10 rounded border border-outline-variant bg-surface-container-lowest px-3 text-sm text-on-surface transition-all placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className={inputClassName}
                 />
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  id="remember"
-                  name="remember"
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="rounded border-outline-variant text-primary focus:ring-primary/20"
-                />
-                <label
-                  htmlFor="remember"
-                  className="font-geist cursor-pointer select-none text-sm text-on-surface-variant"
-                >
-                  Recordarme por 30 días
-                </label>
               </div>
 
               {error && <Alert variant="destructive">{error}</Alert>}
@@ -118,7 +105,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="font-geist flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-xs font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary-container active:scale-[0.98] disabled:opacity-50"
+                  className="font-geist flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-xs font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary-container motion-safe:active:scale-[0.98] disabled:opacity-50"
                 >
                   {loading ? "Iniciando sesión…" : "Iniciar sesión"}
                   <MaterialIcon name="login" className="text-[18px]" />

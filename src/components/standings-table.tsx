@@ -15,7 +15,7 @@ function TeamNameCell({ name, code }: { name: string; code: string }) {
       <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-outline-variant/50 bg-surface-container-high">
         {flagUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={flagUrl} alt="" className="h-full w-full object-cover" />
+          <img src={flagUrl} alt="" width={80} height={80} className="h-full w-full object-cover" />
         ) : (
           <span className="font-mono text-[10px] font-bold text-primary">
             {teamInitials(code)}

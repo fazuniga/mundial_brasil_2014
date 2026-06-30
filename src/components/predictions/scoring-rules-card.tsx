@@ -146,6 +146,7 @@ export function ScoringRulesCard({
           onClick={() => setOpen((value) => !value)}
           className="flex w-full items-center justify-between gap-3 border-b border-outline-variant/50 bg-surface-container-lowest p-4 text-left"
           aria-expanded={open}
+          aria-label={open ? "Ocultar reglas de puntuación" : "Mostrar reglas de puntuación"}
         >
           {header}
           <MaterialIcon

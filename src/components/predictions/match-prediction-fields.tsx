@@ -10,10 +10,10 @@ import type {
 import { cn } from "@/lib/utils";
 
 export const desktopScoreInputClass =
-  "h-9 w-11 rounded-md border border-outline-variant bg-surface-container-lowest text-center font-headline text-lg font-bold text-on-surface tabular-nums transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:w-12 sm:text-xl";
+  "h-9 w-11 rounded-md border border-outline-variant bg-surface-container-lowest text-center font-headline text-lg font-bold text-on-surface tabular-nums transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:w-12 sm:text-xl";
 
 export const mobileScoreInputClass =
-  "h-11 min-h-[44px] w-14 min-w-[44px] rounded-lg border border-outline-variant bg-surface-container-lowest text-center font-headline text-2xl font-bold text-on-surface tabular-nums transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50";
+  "h-11 min-h-[44px] w-14 min-w-[44px] rounded-lg border border-outline-variant bg-surface-container-lowest text-center font-headline text-2xl font-bold text-on-surface tabular-nums transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50";
 
 export function KnockoutScoreHint({ className }: { className?: string }) {
   return (
@@ -75,6 +75,8 @@ export function TeamCell({
           <img
             src={flagUrl}
             alt={country}
+            width={80}
+            height={80}
             className="h-full w-full object-cover"
             onError={(e) => {
               e.currentTarget.style.display = "none";

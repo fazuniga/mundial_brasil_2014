@@ -48,10 +48,10 @@ type AdminMatchSectionProps = {
 };
 
 const scoreInputClass =
-  "h-10 w-12 rounded-md border border-border/60 bg-white text-center font-headline text-xl font-bold text-on-surface tabular-nums transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 sm:h-11 sm:w-14 sm:text-2xl";
+  "h-10 w-12 rounded-md border border-border/60 bg-white text-center font-headline text-xl font-bold text-on-surface tabular-nums transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/15 sm:h-11 sm:w-14 sm:text-2xl";
 
 const labeledScoreFieldClass =
-  "flex items-center overflow-hidden rounded-md border border-border/60 bg-white transition-all focus-within:border-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-primary/15 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50";
+  "flex items-center overflow-hidden rounded-md border border-border/60 bg-white transition-[border-color,box-shadow] focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50";
 
 const labeledScoreInputClass =
   "h-10 min-w-0 flex-1 border-0 rounded-none bg-transparent px-2 font-geist text-base text-on-surface shadow-none focus-visible:border-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed";
@@ -130,6 +130,8 @@ function TeamCell({
           <img
             src={flagUrl}
             alt={country}
+            width={80}
+            height={80}
             className="h-full w-full object-cover"
             onError={(e) => {
               e.currentTarget.style.display = "none";

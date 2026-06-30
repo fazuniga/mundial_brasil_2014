@@ -81,7 +81,7 @@ export default async function ProfilePage() {
   return (
     <>
       <SiteHeader userEmail={user.email} isAdmin={isAdmin} activeNav="perfil" />
-      <main className="mx-auto flex w-full max-w-7xl flex-col gap-section-gap px-gutter-md py-24 md:pb-8">
+      <main id="main-content" className="mx-auto flex w-full max-w-7xl flex-col gap-section-gap px-gutter-md py-24 md:pb-8">
         <header className="space-y-2">
           <p className="font-geist text-xs font-semibold uppercase tracking-widest text-accent">
             Polla Mundial 2026

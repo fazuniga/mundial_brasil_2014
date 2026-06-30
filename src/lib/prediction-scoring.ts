@@ -45,6 +45,13 @@ export function formatScore(home: number, away: number): string {
   return `${home}–${away}`;
 }
 
+export function hasPenaltyShootout(result: {
+  pens_home?: number | null;
+  pens_away?: number | null;
+}): boolean {
+  return result.pens_home != null && result.pens_away != null;
+}
+
 export function firstGoalRangeLabel(key: string | null): string {
   if (!key) return "—";
   return FIRST_GOAL_RANGES.find((r) => r.key === key)?.label ?? key;

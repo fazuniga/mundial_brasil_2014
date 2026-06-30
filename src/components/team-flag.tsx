@@ -24,6 +24,8 @@ export function TeamFlag({ code, country, className }: TeamFlagProps) {
         <img
           src={flagUrl}
           alt={`Bandera de ${country}`}
+          width={80}
+          height={80}
           className="h-full w-full object-cover"
           onError={(e) => {
             e.currentTarget.style.display = "none";

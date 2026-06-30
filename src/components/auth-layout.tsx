@@ -18,7 +18,7 @@ export function AuthLayout({ title, description, children }: AuthLayoutProps) {
   return (
     <>
       <SiteHeader />
-      <main className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center">
+      <main id="main-content" className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center">
         <PageShell narrow className="w-full py-10">
           <Card className="border-primary/15">
             <CardHeader>

@@ -20,7 +20,7 @@ export function MobileBottomNav({
     <nav
       className={cn(
         "fixed bottom-0 left-0 z-50 flex w-full items-center justify-around rounded-t-xl border-t border-outline-variant/40 bg-surface shadow-[0_-2px_10px_rgba(0,0,0,0.08)] md:hidden",
-        compact ? "gap-0 px-1 py-2" : "px-4 py-3",
+        compact ? "gap-0 px-1 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]" : "px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]",
       )}
     >
       <Link

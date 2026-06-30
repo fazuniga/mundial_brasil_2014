@@ -35,7 +35,7 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
         onOpenChange(false);
       }}
       onClose={() => onOpenChange(false)}
-      className="fixed inset-0 m-auto max-h-[calc(100%-2rem)] w-[calc(100%-2rem)] max-w-lg rounded-lg border border-outline-variant bg-white p-0 shadow-lg backdrop:bg-black/50 open:flex open:flex-col"
+      className="fixed inset-0 m-auto max-h-[calc(100%-2rem)] w-[calc(100%-2rem)] max-w-lg overscroll-contain rounded-lg border border-outline-variant bg-card p-0 text-card-foreground shadow-lg backdrop:bg-black/50 open:flex open:flex-col"
     >
       {children}
     </dialog>

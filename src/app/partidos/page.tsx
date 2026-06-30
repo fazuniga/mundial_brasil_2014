@@ -12,6 +12,9 @@ import {
 import { buildResultsByMatch, type MatchResultScore } from "@/lib/home-fixtures";
 import { buildGoalsByMatch } from "@/lib/match-goals-display";
 import type { FixtureRow, PredictionRow } from "@/lib/predictions-types";
+import {
+  parseFixtureFiltersFromSearchParams,
+} from "@/lib/filter-url-params";
 import { ensureUserPool } from "@/lib/predictions-utils";
 
 export const metadata: Metadata = {
@@ -19,12 +22,15 @@ export const metadata: Metadata = {
 };
 
 type PartidosPageProps = {
-  searchParams: Promise<{ v?: string }>;
+  searchParams: Promise<{ v?: string; r?: string; hoy?: string; q?: string }>;
 };
 
 export default async function PartidosPage({ searchParams }: PartidosPageProps) {
-  const { v } = await searchParams;
-  const initialView: PartidosView = v === "grupo" ? "posiciones" : "partidos";
+  const params = await searchParams;
+  const initialView: PartidosView = params.v === "grupo" ? "posiciones" : "partidos";
+  const initialFilters = parseFixtureFiltersFromSearchParams(params, {
+    todayOnly: true,
+  });
 
   const supabase = await createClient();
   const {
@@ -63,7 +69,9 @@ export default async function PartidosPage({ searchParams }: PartidosPageProps) 
       )
       .order("match_date")
       .order("match_time"),
-    supabase.from("match_results").select("id_match, goals_home, goals_away"),
+    supabase
+      .from("match_results")
+      .select("id_match, goals_home, goals_away, goals_home_et, goals_away_et, pens_home, pens_away"),
     supabase
       .from("match_goals")
       .select("id_goal, id_match, minute, is_own_goal, players(name, teams(code))")
@@ -100,7 +108,7 @@ export default async function PartidosPage({ searchParams }: PartidosPageProps) 
   return (
     <>
       <SiteHeader userEmail={user?.email} isAdmin={isAdmin} activeNav="partidos" />
-      <main className="mx-auto flex w-full max-w-5xl flex-col gap-section-gap px-gutter-md py-24 md:pb-8">
+      <main id="main-content" className="mx-auto flex w-full max-w-5xl flex-col gap-section-gap px-gutter-md py-24 md:pb-8">
         <header className="space-y-2">
           <p className="font-geist text-xs font-semibold uppercase tracking-widest text-accent">
             Torneo
@@ -127,6 +135,7 @@ export default async function PartidosPage({ searchParams }: PartidosPageProps) 
               Object.keys(predictionsByMatch).length > 0 ? predictionsByMatch : undefined
             }
             initialView={initialView}
+            initialFilters={initialFilters}
           />
         )}
       </main>

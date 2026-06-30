@@ -18,7 +18,7 @@ type MatchSideBetsProps = {
 };
 
 const sideBetInputClass =
-  "h-9 w-full rounded-md border border-outline-variant bg-surface-container-lowest font-geist text-sm text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50";
+  "h-9 w-full rounded-md border border-outline-variant bg-surface-container-lowest font-geist text-sm text-on-surface focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50";
 
 const sideBetLabelClass = "font-geist text-xs text-on-surface-variant";
 const sideBetHelperClass = "font-geist text-[10px] leading-snug text-on-surface-variant";

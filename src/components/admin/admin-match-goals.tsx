@@ -72,7 +72,7 @@ type AdminMatchGoalsProps = {
 };
 
 const fieldInputClass =
-  "h-10 rounded-md border border-border/60 bg-white font-geist text-base text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-50";
+  "h-10 rounded-md border border-border/60 bg-white font-geist text-base text-on-surface focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-50";
 
 export function AdminMatchGoals({
   fixture,
@@ -128,6 +128,13 @@ export function AdminMatchGoals({
   }
 
   async function handleDelete(idGoal: number) {
+    if (
+      !window.confirm(
+        "¿Eliminar este gol del partido? Esta acción no se puede deshacer.",
+      )
+    ) {
+      return;
+    }
     setDeletingId(idGoal);
     setLocalError(null);
     const err = await onDeleteGoal(idGoal);

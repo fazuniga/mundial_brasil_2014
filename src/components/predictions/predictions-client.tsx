@@ -1,13 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { MaterialIcon } from "@/components/material-icon";
 import { FilterField } from "@/components/filter-field";
 import { RoundFilterSelect } from "@/components/round-filter-select";
 import { filterFixturesToday } from "@/lib/match-timezone";
+import {
+  type FixtureListFilters,
+  parseFixtureFiltersFromSearchParams,
+  replaceFilterUrl,
+} from "@/lib/filter-url-params";
 import { GroupPredictionsTable } from "@/components/predictions/group-predictions-table";
 import { PredictionsSearchBar } from "@/components/predictions/predictions-search-bar";
 import { ScoringRulesCard } from "@/components/predictions/scoring-rules-card";
@@ -56,6 +61,12 @@ import {
 } from "@/lib/predictions-utils";
 
 type FixtureViewMode = "group" | "game";
+
+const FILTER_DEFAULTS = { todayOnly: false };
+
+function parseViewMode(vm: string | null): FixtureViewMode {
+  return vm === "juego" ? "game" : "group";
+}
 
 type PredictionsClientProps = {
   fixtures: FixtureRow[];
@@ -119,9 +130,26 @@ export function PredictionsClient({
   isAuthenticated,
 }: PredictionsClientProps) {
   const router = useRouter();
-  const [todayOnly, setTodayOnly] = useState(false);
-  const [viewMode, setViewMode] = useState<FixtureViewMode>("group");
-  const [selectedRound, setSelectedRound] = useState<number | null>(null);
+  const searchParams = useSearchParams();
+  const initialFilters = useMemo(
+    () =>
+      parseFixtureFiltersFromSearchParams(
+        {
+          r: searchParams.get("r") ?? undefined,
+          hoy: searchParams.get("hoy") ?? undefined,
+          q: searchParams.get("q") ?? undefined,
+        },
+        FILTER_DEFAULTS,
+      ),
+    [searchParams],
+  );
+  const [todayOnly, setTodayOnly] = useState(initialFilters.todayOnly);
+  const [viewMode, setViewMode] = useState<FixtureViewMode>(() =>
+    parseViewMode(searchParams.get("vm")),
+  );
+  const [selectedRound, setSelectedRound] = useState<number | null>(
+    initialFilters.selectedRound,
+  );
   const roundOptions = useMemo(() => uniqueRoundsFromFixtures(fixtures), [fixtures]);
   const roundFilteredFixtures = useMemo(
     () => filterFixturesByRound(filterFixturesToday(fixtures, todayOnly), selectedRound),
@@ -138,7 +166,7 @@ export function PredictionsClient({
     () => getMaxEnabledPredictionRound(visibleFixtures),
     [visibleFixtures],
   );
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialFilters.searchQuery);
   const filteredSections = useMemo(
     () => filterSectionsBySearch(sections, searchQuery),
     [sections, searchQuery],
@@ -217,6 +245,66 @@ export function PredictionsClient({
 
   const pendingCount =
     matchPendingCount + (winnerPending ? 1 : 0) + (topScorerPending ? 1 : 0);
+
+  const syncFiltersUrl = useCallback(
+    (
+      filters: FixtureListFilters,
+      nextViewMode: FixtureViewMode = viewMode,
+    ) => {
+      router.replace(
+        replaceFilterUrl("/apuestas", filters, FILTER_DEFAULTS, {
+          vm: nextViewMode === "game" ? "juego" : undefined,
+        }),
+      );
+    },
+    [router, viewMode],
+  );
+
+  useEffect(() => {
+    if (pendingCount === 0) return;
+
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [pendingCount]);
+
+  function handleViewModeChange(next: FixtureViewMode) {
+    setViewMode(next);
+    syncFiltersUrl(
+      { selectedRound, todayOnly, searchQuery },
+      next,
+    );
+  }
+
+  function handleRoundChange(roundId: number | null) {
+    setSelectedRound(roundId);
+    syncFiltersUrl({
+      selectedRound: roundId,
+      todayOnly,
+      searchQuery,
+    });
+  }
+
+  function handleTodayOnlyChange(checked: boolean) {
+    setTodayOnly(checked);
+    syncFiltersUrl({
+      selectedRound,
+      todayOnly: checked,
+      searchQuery,
+    });
+  }
+
+  function handleSearchChange(query: string) {
+    setSearchQuery(query);
+    syncFiltersUrl({
+      selectedRound,
+      todayOnly,
+      searchQuery: query,
+    });
+  }
 
   function handleDraftChange(
     idMatch: number,
@@ -532,7 +620,7 @@ export function PredictionsClient({
                     variant={viewMode === "group" ? "default" : "ghost"}
                     className={viewMode === "group" ? "text-white" : "text-on-surface"}
                     aria-pressed={viewMode === "group"}
-                    onClick={() => setViewMode("group")}
+                    onClick={() => handleViewModeChange("group")}
                   >
                     Por grupo
                   </Button>
@@ -542,7 +630,7 @@ export function PredictionsClient({
                     variant={viewMode === "game" ? "default" : "ghost"}
                     className={viewMode === "game" ? "text-white" : "text-on-surface"}
                     aria-pressed={viewMode === "game"}
-                    onClick={() => setViewMode("game")}
+                    onClick={() => handleViewModeChange("game")}
                   >
                     Por partido
                   </Button>
@@ -550,19 +638,24 @@ export function PredictionsClient({
               </div>
             </FilterField>
 
-            <FilterField label="Fase del torneo" labelClassName="text-white">
+            <FilterField label="Fase del torneo" htmlFor="apuestas-round-filter" labelClassName="text-white">
               <div className="flex flex-col gap-1.5">
                 <RoundFilterSelect
+                  id="apuestas-round-filter"
                   rounds={roundOptions}
                   value={selectedRound}
-                  onChange={setSelectedRound}
+                  onChange={handleRoundChange}
                 />
               </div>
             </FilterField>
 
-            <FilterField label="Filtrar" labelClassName="text-white">
+            <FilterField label="Filtrar" htmlFor="apuestas-today-matches-toggle" labelClassName="text-white">
               <div className="flex flex-col gap-1.5">
-                <TodayMatchesToggle checked={todayOnly} onChange={setTodayOnly} />
+                <TodayMatchesToggle
+                  id="apuestas-today-matches-toggle"
+                  checked={todayOnly}
+                  onChange={handleTodayOnlyChange}
+                />
               </div>
             </FilterField>
           </div>
@@ -570,7 +663,7 @@ export function PredictionsClient({
           <FilterField label="Buscar" className="min-w-0 w-full lg:max-w-md" labelClassName="text-white">
             <PredictionsSearchBar
               value={searchQuery}
-              onChange={setSearchQuery}
+              onChange={handleSearchChange}
               resultCount={searchQuery.trim() ? filteredMatchCount : undefined}
             />
           </FilterField>
@@ -615,7 +708,7 @@ export function PredictionsClient({
         )}
 
         {success && (
-          <Alert className="border-primary/30 bg-primary/5 text-on-surface">
+          <Alert live="polite" className="border-primary/30 bg-primary/5 text-on-surface">
             {success}
           </Alert>
         )}

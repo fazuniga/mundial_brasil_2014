@@ -5,13 +5,14 @@ import { MaterialIcon } from "@/components/material-icon";
 import { Alert } from "@/components/ui/alert";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 const inputClassName =
-  "h-10 rounded border border-outline-variant bg-surface-container-lowest px-3 text-sm text-on-surface transition-all placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20";
+  "h-10 rounded border border-outline-variant bg-surface-container-lowest px-3 text-sm text-on-surface transition-[border-color,box-shadow] placeholder:text-on-surface-variant/60 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const firstNameRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -34,6 +35,7 @@ export default function RegisterPage() {
     if (signUpError) {
       setLoading(false);
       setError(signUpError.message);
+      firstNameRef.current?.focus();
       return;
     }
     setLoading(false);
@@ -42,7 +44,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-grow items-center justify-center p-gutter-md">
+    <main id="main-content" className="flex min-h-screen flex-grow items-center justify-center p-gutter-md">
       <div className="mx-auto flex w-full max-w-7xl justify-center">
         <div className="w-full max-w-md">
         <div className="overflow-hidden rounded-xl border border-outline-variant/60 bg-card shadow-md">
@@ -51,7 +53,7 @@ export default function RegisterPage() {
               <p className="font-geist text-xs font-semibold uppercase tracking-widest text-accent">
                 Polla Mundial 2026
               </p>
-              <h1 className="font-headline flex items-center justify-center gap-2 text-3xl font-bold text-primary">
+              <h1 className="font-headline flex items-center justify-center gap-2 text-3xl font-bold text-primary text-balance">
                 <MaterialIcon name="sports_soccer" filled className="text-3xl" />
                 Registrarse
               </h1>
@@ -70,12 +72,13 @@ export default function RegisterPage() {
                     Nombre
                   </label>
                   <input
+                    ref={firstNameRef}
                     id="firstName"
                     name="firstName"
                     type="text"
                     required
                     autoComplete="given-name"
-                    placeholder="Nombre"
+                    placeholder="Nombre…"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     className={inputClassName}
@@ -94,7 +97,7 @@ export default function RegisterPage() {
                     type="text"
                     required
                     autoComplete="family-name"
-                    placeholder="Apellido"
+                    placeholder="Apellido…"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     className={inputClassName}
@@ -115,7 +118,8 @@ export default function RegisterPage() {
                   type="email"
                   required
                   autoComplete="email"
-                  placeholder="nombre@ejemplo.com"
+                  spellCheck={false}
+                  placeholder="nombre@ejemplo.com…"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className={inputClassName}
@@ -149,7 +153,7 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="font-geist flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-xs font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary-container active:scale-[0.98] disabled:opacity-50"
+                  className="font-geist flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-xs font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary-container motion-safe:active:scale-[0.98] disabled:opacity-50"
                 >
                   {loading ? "Creando cuenta…" : "Crear cuenta"}
                   <MaterialIcon name="person_add" className="text-[18px]" />

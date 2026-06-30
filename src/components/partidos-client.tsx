@@ -17,6 +17,10 @@ import type { GroupStandingRow } from "@/lib/group-standings";
 import type { MatchResultScore } from "@/lib/home-fixtures";
 import { filterFixturesToday } from "@/lib/match-timezone";
 import type { MatchGoalPublicRow } from "@/lib/match-goals-display";
+import {
+  type FixtureListFilters,
+  replaceFilterUrl,
+} from "@/lib/filter-url-params";
 import type { FixtureRow, PredictionRow } from "@/lib/predictions-types";
 import {
   GROUP_STAGE_ROUND_ID,
@@ -26,6 +30,8 @@ import {
 } from "@/lib/predictions-utils";
 import { cn } from "@/lib/utils";
 
+const FILTER_DEFAULTS = { todayOnly: true };
+
 type PartidosClientProps = {
   grouped: Record<string, GroupStandingRow[]>;
   fixtures: FixtureRow[];
@@ -33,6 +39,7 @@ type PartidosClientProps = {
   goalsByMatch: Record<number, MatchGoalPublicRow[]>;
   predictionsByMatch?: Record<number, PredictionRow>;
   initialView: PartidosView;
+  initialFilters: FixtureListFilters;
 };
 
 export function PartidosClient({
@@ -42,12 +49,15 @@ export function PartidosClient({
   goalsByMatch,
   predictionsByMatch,
   initialView,
+  initialFilters,
 }: PartidosClientProps) {
   const router = useRouter();
   const [view, setView] = useState<PartidosView>(initialView);
-  const [selectedRound, setSelectedRound] = useState<number | null>(null);
-  const [todayOnly, setTodayOnly] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRound, setSelectedRound] = useState<number | null>(
+    initialFilters.selectedRound,
+  );
+  const [todayOnly, setTodayOnly] = useState(initialFilters.todayOnly);
+  const [searchQuery, setSearchQuery] = useState(initialFilters.searchQuery);
 
   const roundOptions = useMemo(() => uniqueRoundsFromFixtures(fixtures), [fixtures]);
   const groupRoundName =
@@ -62,31 +72,70 @@ export function PartidosClient({
     }
   }, [standingsAvailable, view]);
 
-  function syncViewUrl(next: PartidosView) {
-    if (next === "posiciones") {
-      router.replace("/partidos?v=grupo");
-      return;
-    }
-    router.replace("/partidos");
+  function syncUrl(
+    nextView: PartidosView,
+    filters: FixtureListFilters,
+  ) {
+    router.replace(
+      replaceFilterUrl("/partidos", filters, FILTER_DEFAULTS, {
+        v: nextView === "posiciones" ? "grupo" : undefined,
+      }),
+    );
   }
 
   function handleViewChange(next: PartidosView) {
     if (next === "posiciones" && !standingsAvailable) return;
+
+    const nextFilters: FixtureListFilters = {
+      selectedRound,
+      todayOnly,
+      searchQuery,
+    };
+
     setView(next);
     if (next === "posiciones") {
+      nextFilters.selectedRound = GROUP_STAGE_ROUND_ID;
+      nextFilters.searchQuery = "";
+      nextFilters.todayOnly = false;
       setSelectedRound(GROUP_STAGE_ROUND_ID);
       setSearchQuery("");
       setTodayOnly(false);
     }
-    syncViewUrl(next);
+
+    syncUrl(next, nextFilters);
   }
 
   function handleRoundChange(roundId: number | null) {
     setSelectedRound(roundId);
-    if (roundId !== null && roundId > GROUP_STAGE_ROUND_ID && view === "posiciones") {
-      setView("partidos");
-      syncViewUrl("partidos");
-    }
+    const nextView =
+      roundId !== null && roundId > GROUP_STAGE_ROUND_ID && view === "posiciones"
+        ? "partidos"
+        : view;
+    if (nextView !== view) setView(nextView);
+
+    syncUrl(nextView, {
+      selectedRound: roundId,
+      todayOnly,
+      searchQuery,
+    });
+  }
+
+  function handleTodayOnlyChange(checked: boolean) {
+    setTodayOnly(checked);
+    syncUrl(view, {
+      selectedRound,
+      todayOnly: checked,
+      searchQuery,
+    });
+  }
+
+  function handleSearchChange(query: string) {
+    setSearchQuery(query);
+    syncUrl(view, {
+      selectedRound,
+      todayOnly,
+      searchQuery: query,
+    });
   }
 
   const visibleFixtures = useMemo(() => {
@@ -135,7 +184,7 @@ export function PartidosClient({
               view === "posiciones" && "sm:grid-cols-2",
             )}
           >
-            <FilterField label="Vista" className="min-w-0 w-full">
+            <FilterField label="Vista" htmlFor="partidos-view" className="min-w-0 w-full">
               <PartidosViewSelect
                 value={view}
                 onChange={handleViewChange}
@@ -144,7 +193,11 @@ export function PartidosClient({
             </FilterField>
 
             {view === "partidos" ? (
-              <FilterField label="Fase del torneo" className="min-w-0 w-full">
+              <FilterField
+                label="Fase del torneo"
+                htmlFor="partidos-round-filter"
+                className="min-w-0 w-full"
+              >
                 <RoundFilterSelect
                   rounds={roundOptions}
                   value={selectedRound}
@@ -162,8 +215,16 @@ export function PartidosClient({
 
             {view === "partidos" ? (
               <>
-                <FilterField label="Filtrar" className="min-w-0 w-full lg:w-auto">
-                  <TodayMatchesToggle checked={todayOnly} onChange={setTodayOnly} />
+                <FilterField
+                  label="Filtrar"
+                  htmlFor="partidos-today-matches-toggle"
+                  className="min-w-0 w-full lg:w-auto"
+                >
+                  <TodayMatchesToggle
+                    id="partidos-today-matches-toggle"
+                    checked={todayOnly}
+                    onChange={handleTodayOnlyChange}
+                  />
                 </FilterField>
 
                 <FilterField
@@ -172,7 +233,7 @@ export function PartidosClient({
                 >
                   <PredictionsSearchBar
                     value={searchQuery}
-                    onChange={setSearchQuery}
+                    onChange={handleSearchChange}
                     resultCount={searchQuery.trim() ? visibleFixtures.length : undefined}
                   />
                 </FilterField>
