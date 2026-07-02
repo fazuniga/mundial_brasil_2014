@@ -1,4 +1,5 @@
 import { FIRST_GOAL_RANGES } from "@/lib/first-goal-ranges";
+import { displayScoreFromResult } from "@/lib/home-fixtures";
 import type { ScoringRuleRow } from "@/lib/predictions-types";
 import type { PredictionDraft } from "@/lib/predictions-utils";
 import { parseExtraTimeDraft, parseFirstGoalMinuteDraft, parseScoreDraft } from "@/lib/predictions-utils";
@@ -39,6 +40,15 @@ function rulesMap(rules: ScoringRuleRow[]): Record<string, number> {
 
 export function hasMatchResult(result: MatchResultDetail | undefined): boolean {
   return result?.goals_home != null && result?.goals_away != null;
+}
+
+/** Final score for display and main-score comparison (includes prórroga when saved). */
+export function actualScoreGoals(
+  result: MatchResultDetail,
+): { home: number; away: number } | null {
+  const displayed = displayScoreFromResult(result);
+  if (!displayed) return null;
+  return { home: displayed.home, away: displayed.away };
 }
 
 export function formatScore(home: number, away: number): string {
@@ -88,10 +98,15 @@ export function computeMainScorePoints(
     return { points: 0, ruleKey: null };
   }
 
+  const actual = actualScoreGoals(result);
+  if (!actual) {
+    return { points: 0, ruleKey: null };
+  }
+
   const weights = rulesMap(scoringRules);
   const { goalsHome: predH, goalsAway: predA } = parsed;
-  const actH = result.goals_home;
-  const actA = result.goals_away;
+  const actH = actual.home;
+  const actA = actual.away;
 
   if (predH === actH && predA === actA) {
     return { points: weights.exact_score ?? 0, ruleKey: "exact_score" };
@@ -162,20 +177,19 @@ export function scoreCompareTone(
   const parsed = parseScoreDraft(draft);
   if (!parsed) return "neutral";
 
+  const actual = actualScoreGoals(result);
+  if (!actual) return "neutral";
+
   const { goalsHome, goalsAway } = parsed;
-  if (
-    goalsHome === result.goals_home &&
-    goalsAway === result.goals_away
-  ) {
+  if (goalsHome === actual.home && goalsAway === actual.away) {
     return "correct";
   }
 
   const predDiff = goalsHome - goalsAway;
-  const actDiff = result.goals_home! - result.goals_away!;
+  const actDiff = actual.home - actual.away;
   if (
     predDiff === actDiff ||
-    matchOutcome(goalsHome, goalsAway) ===
-      matchOutcome(result.goals_home!, result.goals_away!)
+    matchOutcome(goalsHome, goalsAway) === matchOutcome(actual.home, actual.away)
   ) {
     return "partial";
   }
