@@ -13,9 +13,10 @@ import type { AdminFixtureRow, MatchGoalRow, MatchResultDraft } from "@/lib/admi
 import {
   deriveFirstGoalFromGoals,
   canSaveAdminMatch,
+  goalsIncludeExtraTime,
   isAdminMatchDirty,
+  resolveFinalScore,
   resolveRegulationScore,
-  REGULATION_CUTOFF_MINUTE,
   STOPPAGE_2T_MAX,
   STOPPAGE_2T_MIN,
 } from "@/lib/admin-utils";
@@ -56,7 +57,7 @@ const labeledScoreFieldClass =
 const labeledScoreInputClass =
   "h-10 min-w-0 flex-1 border-0 rounded-none bg-transparent px-2 font-geist text-base text-on-surface shadow-none focus-visible:border-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed";
 
-function regulationScoreDisplay(
+function finalScoreDisplay(
   fixture: AdminFixtureRow,
   goals: MatchGoalRow[],
   players: PlayerRow[],
@@ -66,7 +67,7 @@ function regulationScoreDisplay(
     return null;
   }
 
-  const score = resolveRegulationScore(
+  const score = resolveFinalScore(
     goals,
     fixture.home_team_id,
     fixture.away_team_id,
@@ -194,7 +195,7 @@ function AdminMatchCard({
     fixture.match_date,
     fixture.match_time,
   );
-  const score = regulationScoreDisplay(fixture, goals, players, draft);
+  const score = finalScoreDisplay(fixture, goals, players, draft);
 
   return (
     <article className="rounded-lg border border-border/50 bg-slate-50/50 p-4 shadow-sm">
@@ -339,7 +340,14 @@ function AdminMatchForm({
     players,
     draft,
   );
-  const etDerivedFromGoals = goals.some((g) => g.minute > REGULATION_CUTOFF_MINUTE);
+  const derivedFinal = resolveFinalScore(
+    goals,
+    fixture.home_team_id,
+    fixture.away_team_id,
+    players,
+    draft,
+  );
+  const etDerivedFromGoals = goalsIncludeExtraTime(goals);
   const canSave = canSaveAdminMatch(
     draft,
     baseline,
@@ -355,7 +363,7 @@ function AdminMatchForm({
         Registra cada gol con su minuto real. Usa {STOPPAGE_2T_MIN}–
         {STOPPAGE_2T_MAX} para el tiempo añadido al final del reglamento
         (ej. {STOPPAGE_2T_MIN + 2} = 90+3), y 91–130 para goles en prórroga.
-        El marcador a 90 min y el total en prórroga se derivan automáticamente.
+        El marcador final y el total en prórroga se derivan automáticamente.
         Indica penales solo si aplican.
       </p>
 
@@ -372,15 +380,15 @@ function AdminMatchForm({
         <AdminDerivedFirstGoal derivedFirstGoal={derivedFirstGoal} />
         <div className="flex h-full min-w-0 flex-col rounded-xl border border-border/50 bg-white px-4 py-3">
           <p className="font-geist text-sm font-medium text-on-surface-variant">
-            Marcador 90 min (automático)
+            Marcador final (automático)
           </p>
           <div className="mt-2 flex flex-1 items-center justify-center gap-2">
             <span className={cn(scoreInputClass, "flex items-center justify-center")}>
-              {derivedRegulation.goalsHome}
+              {derivedFinal.goalsHome}
             </span>
             <span className="font-headline text-lg font-bold text-slate-500">–</span>
             <span className={cn(scoreInputClass, "flex items-center justify-center")}>
-              {derivedRegulation.goalsAway}
+              {derivedFinal.goalsAway}
             </span>
           </div>
         </div>
@@ -574,7 +582,7 @@ export function AdminMatchSection({
               const matchGoals = goalsByMatch[fixture.id_match] ?? [];
               const baselineGoals = baselineGoalsByMatch[fixture.id_match] ?? [];
               const dirty = isAdminMatchDirty(draft, baseline, matchGoals, baselineGoals);
-              const score = regulationScoreDisplay(
+              const score = finalScoreDisplay(
                 fixture,
                 matchGoals,
                 players,

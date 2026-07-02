@@ -204,6 +204,15 @@ function isRegulationMinute(minute: number): boolean {
   );
 }
 
+/** True for prórroga minutes (91–130), excluding regulation stoppage encodings. */
+export function isExtraTimeMinute(minute: number): boolean {
+  return minute > REGULATION_CUTOFF_MINUTE && minute <= ET_MAX_MINUTE;
+}
+
+export function goalsIncludeExtraTime(goals: MatchGoalRow[]): boolean {
+  return goals.some((goal) => isExtraTimeMinute(goal.minute));
+}
+
 export function deriveScoreFromGoals(
   goals: MatchGoalRow[],
   homeTeamId: number,
@@ -274,6 +283,41 @@ export function resolveRegulationScore(
   }
 
   return { goalsHome: 0, goalsAway: 0 };
+}
+
+/**
+ * Display/summary score: cumulative through prórroga when ET goals exist or ET
+ * totals are saved; otherwise regulation (90 min + stoppage).
+ */
+export function resolveFinalScore(
+  goals: MatchGoalRow[],
+  homeTeamId: number,
+  awayTeamId: number,
+  players: PlayerRow[],
+  draft: MatchResultDraft,
+): DerivedRegulationScore {
+  if (goals.length > 0) {
+    const { regulation, etTotal } = deriveScoreFromGoals(
+      goals,
+      homeTeamId,
+      awayTeamId,
+      players,
+    );
+    return etTotal ?? regulation;
+  }
+
+  const goalsHomeEt = Number.parseInt(draft.goalsHomeEt, 10);
+  const goalsAwayEt = Number.parseInt(draft.goalsAwayEt, 10);
+  if (
+    draft.goalsHomeEt !== "" &&
+    draft.goalsAwayEt !== "" &&
+    !Number.isNaN(goalsHomeEt) &&
+    !Number.isNaN(goalsAwayEt)
+  ) {
+    return { goalsHome: goalsHomeEt, goalsAway: goalsAwayEt };
+  }
+
+  return resolveRegulationScore(goals, homeTeamId, awayTeamId, players, draft);
 }
 
 export function regulationScoreToDraft(score: DerivedRegulationScore): Pick<
