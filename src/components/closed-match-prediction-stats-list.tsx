@@ -11,7 +11,7 @@ import {
   formatPredictionStatPercent,
   type MatchPredictionStatsRow,
 } from "@/lib/closed-match-prediction-stats";
-import type { MatchResultScore } from "@/lib/home-fixtures";
+import { displayScoreFromResult, type MatchResultScore } from "@/lib/home-fixtures";
 import type { MatchGoalPublicRow } from "@/lib/match-goals-display";
 import { filterFixturesToday } from "@/lib/match-timezone";
 import {
@@ -169,10 +169,7 @@ export function MatchPredictionStatsList({
         <ul className="flex flex-col gap-stack-gap p-3 sm:p-4">
           {visibleRows.map((row) => {
             const result = resultsByMatch[row.id_match];
-            const score =
-              result?.goals_home != null && result?.goals_away != null
-                ? { home: result.goals_home, away: result.goals_away }
-                : undefined;
+            const score = displayScoreFromResult(result);
             const goals = goalsByMatch[row.id_match] ?? [];
 
             return (

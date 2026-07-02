@@ -10,6 +10,37 @@ export type MatchResultScore = {
   pens_away?: number | null;
 };
 
+export type FixtureDisplayScore = {
+  home: number;
+  away: number;
+  pensHome?: number;
+  pensAway?: number;
+};
+
+/** Official displayed score: cumulative through prórroga when ET totals are saved. */
+export function displayScoreFromResult(
+  result: MatchResultScore | undefined,
+): FixtureDisplayScore | undefined {
+  if (result?.goals_home == null || result?.goals_away == null) {
+    return undefined;
+  }
+
+  const hasEtTotals =
+    result.goals_home_et != null && result.goals_away_et != null;
+
+  const score: FixtureDisplayScore = {
+    home: hasEtTotals ? result.goals_home_et! : result.goals_home,
+    away: hasEtTotals ? result.goals_away_et! : result.goals_away,
+  };
+
+  if (result.pens_home != null && result.pens_away != null) {
+    score.pensHome = result.pens_home;
+    score.pensAway = result.pens_away;
+  }
+
+  return score;
+}
+
 export const HOME_UPCOMING_LIMIT = 5;
 export const HOME_COMPLETED_LIMIT = 15;
 

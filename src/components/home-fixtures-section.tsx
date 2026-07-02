@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { FixtureRowCard } from "@/components/fixture-row-card";
 import { MaterialIcon } from "@/components/material-icon";
-import type { MatchResultScore } from "@/lib/home-fixtures";
+import { displayScoreFromResult, type MatchResultScore } from "@/lib/home-fixtures";
 import type { FixtureRow } from "@/lib/predictions-types";
 
 type HomeFixturesSectionProps = {
@@ -50,11 +50,7 @@ function FixturesCard({
           {fixtures.map((fixture) => {
             const result = resultsByMatch[fixture.id_match];
             const score =
-              variant === "completed" &&
-              result?.goals_home != null &&
-              result?.goals_away != null
-                ? { home: result.goals_home, away: result.goals_away }
-                : undefined;
+              variant === "completed" ? displayScoreFromResult(result) : undefined;
 
             return (
               <FixtureRowCard
