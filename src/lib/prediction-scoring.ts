@@ -70,6 +70,29 @@ export function actualExtraTimeOccurred(result: MatchResultDetail): boolean {
   );
 }
 
+/**
+ * Score used for main-bet comparison. Knockout predictions include prórroga;
+ * group-stage bets use regulation only.
+ */
+export function actualMainBetScore(
+  result: MatchResultDetail,
+  isKnockout: boolean,
+): { home: number; away: number } | null {
+  if (result.goals_home == null || result.goals_away == null) {
+    return null;
+  }
+
+  if (
+    isKnockout &&
+    result.goals_home_et != null &&
+    result.goals_away_et != null
+  ) {
+    return { home: result.goals_home_et, away: result.goals_away_et };
+  }
+
+  return { home: result.goals_home, away: result.goals_away };
+}
+
 export function extraTimeLabel(value: boolean): string {
   return value ? "Sí" : "No";
 }
@@ -78,20 +101,17 @@ export function computeMainScorePoints(
   draft: PredictionDraft,
   result: MatchResultDetail,
   scoringRules: ScoringRuleRow[],
+  isKnockout: boolean,
 ): { points: number; ruleKey: string | null } {
   const parsed = parseScoreDraft(draft);
-  if (
-    !parsed ||
-    result.goals_home == null ||
-    result.goals_away == null
-  ) {
+  const actual = actualMainBetScore(result, isKnockout);
+  if (!parsed || !actual) {
     return { points: 0, ruleKey: null };
   }
 
   const weights = rulesMap(scoringRules);
   const { goalsHome: predH, goalsAway: predA } = parsed;
-  const actH = result.goals_home;
-  const actA = result.goals_away;
+  const { home: actH, away: actA } = actual;
 
   if (predH === actH && predA === actA) {
     return { points: weights.exact_score ?? 0, ruleKey: "exact_score" };
@@ -146,7 +166,7 @@ export function computeMatchPoints(
   scoringRules: ScoringRuleRow[],
 ): number {
   return (
-    computeMainScorePoints(draft, result, scoringRules).points +
+    computeMainScorePoints(draft, result, scoringRules, isKnockout).points +
     computeSideBetPoints(draft, result, sideBet, isKnockout, scoringRules)
   );
 }
@@ -156,26 +176,24 @@ export type CompareTone = "correct" | "incorrect" | "neutral" | "partial";
 export function scoreCompareTone(
   draft: PredictionDraft,
   result: MatchResultDetail | undefined,
+  isKnockout: boolean,
 ): CompareTone {
   if (!result || !hasMatchResult(result)) return "neutral";
 
   const parsed = parseScoreDraft(draft);
-  if (!parsed) return "neutral";
+  const actual = actualMainBetScore(result, isKnockout);
+  if (!parsed || !actual) return "neutral";
 
   const { goalsHome, goalsAway } = parsed;
-  if (
-    goalsHome === result.goals_home &&
-    goalsAway === result.goals_away
-  ) {
+  if (goalsHome === actual.home && goalsAway === actual.away) {
     return "correct";
   }
 
   const predDiff = goalsHome - goalsAway;
-  const actDiff = result.goals_home! - result.goals_away!;
+  const actDiff = actual.home - actual.away;
   if (
     predDiff === actDiff ||
-    matchOutcome(goalsHome, goalsAway) ===
-      matchOutcome(result.goals_home!, result.goals_away!)
+    matchOutcome(goalsHome, goalsAway) === matchOutcome(actual.home, actual.away)
   ) {
     return "partial";
   }

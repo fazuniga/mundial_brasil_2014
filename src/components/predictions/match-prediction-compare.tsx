@@ -1,6 +1,7 @@
 import { MaterialIcon } from "@/components/material-icon";
 import {
   actualExtraTimeOccurred,
+  actualMainBetScore,
   computeMatchPoints,
   extraTimeLabel,
   firstGoalRangeLabel,
@@ -84,14 +85,16 @@ export function MatchPredictionCompare({
 }: MatchPredictionCompareProps) {
   if (!hasMatchResult(result)) return null;
 
+  const isKnockout = isKnockoutFixture(fixture);
   const parsed = parseScoreDraft(draft);
   const predScore =
     parsed != null
       ? formatScore(parsed.goalsHome, parsed.goalsAway)
       : null;
-  const actualScore = formatScore(result.goals_home!, result.goals_away!);
-  const isKnockout = isKnockoutFixture(fixture);
-  const tone = scoreCompareTone(draft, result);
+  const actual = actualMainBetScore(result, isKnockout);
+  const actualScore =
+    actual != null ? formatScore(actual.home, actual.away) : "—";
+  const tone = scoreCompareTone(draft, result, isKnockout);
   const totalPoints = computeMatchPoints(
     draft,
     result,
