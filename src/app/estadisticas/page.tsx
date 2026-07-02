@@ -55,7 +55,9 @@ export default async function EstadisticasPage() {
       )
       .order("match_date")
       .order("match_time"),
-    supabase.from("match_results").select("id_match, goals_home, goals_away"),
+    supabase
+      .from("match_results")
+      .select("id_match, goals_home, goals_away, goals_home_et, goals_away_et, pens_home, pens_away"),
     supabase
       .from("match_goals")
       .select("id_goal, id_match, minute, is_own_goal, players(name, teams(code))")
