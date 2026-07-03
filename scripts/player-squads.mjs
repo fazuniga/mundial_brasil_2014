@@ -132,6 +132,7 @@ export const PLAYER_SQUADS = {
     ["Salah Zakaria", "GK", "Al-Duhail", "QAT"],
     ["Meshaal Barsham", "GK", "Al-Sadd", "QAT"],
     ["Pedro Miguel", "DF", "Al-Sadd", "QAT"],
+    ["Boualem Khoukhi", "DF", "Al-Sadd", "QAT"],
     ["Lucas Mendes", "DF", "Al-Wakrah", "QAT"],
     ["Issa Laye", "DF", "Al-Arabi", "QAT"],
     ["Jassem Gaber", "DF", "Al-Rayyan", "QAT"],
